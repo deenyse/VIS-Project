@@ -67,6 +67,8 @@ namespace CV_3_project
             return false;
         }
 
+
+
         public void Logout()
         {
             signedInUserLogin = null;
