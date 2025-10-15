@@ -1,4 +1,11 @@
 .vs/
 
 CV-3-project/obj
-CV-3-project/bin
+
+CV-3-project/bin/**
+
+!CV-3-project/bin/
+!CV-3-project/bin/Debug/
+!CV-3-project/bin/Debug/net8.0/
+!CV-3-project/bin/Debug/net8.0/accounts.json
+!CV-3-project/bin/Debug/net8.0/shifts.json
