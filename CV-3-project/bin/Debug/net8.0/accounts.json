@@ -1,0 +1,16 @@
+[
+  {
+    "$type": "manager",
+    "Login": "m1",
+    "Password": "123",
+    "Name": "Alice",
+    "Surname": "Smith"
+  },
+  {
+    "$type": "worker",
+    "Login": "w1",
+    "Password": "123",
+    "Name": "Bob",
+    "Surname": "Johnson"
+  }
+]
