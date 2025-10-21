@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using CV_3_project.Models;
+using System.Collections.Generic;
 
 namespace CV_3_project.Repositories
 {

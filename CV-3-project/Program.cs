@@ -4,8 +4,8 @@
     {
         static void Main(string[] args)
         {
-            // Create a single instance of the Unit of Work
-            IUnitOfWork unitOfWork = new JsonUnitOfWork();
+            // Create a single instance of the Unit of Work using the new MongoDB implementation
+            IUnitOfWork unitOfWork = new MongoUnitOfWork();
 
             // Pass it to the application
             Application app = new Application(unitOfWork);
@@ -17,6 +17,8 @@
                 if (app.signedInUserLogin == null)
                 {
                     Console.WriteLine("1. Login");
+                    Console.WriteLine("2. Create Manager Account");
+                    Console.WriteLine("3. Create Worker Account");
                 }
                 else if (app.IsManager())
                 {
@@ -46,6 +48,16 @@
                             Console.WriteLine("Login successful");
                         else
                             Console.WriteLine("Login failed");
+                    }
+                    else if (choice == "2")
+                    {
+                        // Create Manager Account
+                        CreateAccount(app, isManager: true);
+                    }
+                    else if (choice == "3")
+                    {
+                        // Create Worker Account
+                        CreateAccount(app, isManager: false);
                     }
                 }
                 else if (app.IsManager())
@@ -114,6 +126,48 @@
                         Console.WriteLine("Logged out");
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Handles the logic for creating a new user account.
+        /// </summary>
+        /// <param name="app">The application instance.</param>
+        /// <param name="isManager">True to create a Manager, false to create a Worker.</param>
+        private static void CreateAccount(Application app, bool isManager)
+        {
+            try
+            {
+                Console.Write("Enter new login: ");
+                string login = Console.ReadLine();
+                Console.Write("Enter new password: ");
+                string password = Console.ReadLine();
+                Console.Write("Enter name: ");
+                string name = Console.ReadLine();
+                Console.Write("Enter surname: ");
+                string surname = Console.ReadLine();
+
+                if (string.IsNullOrWhiteSpace(login) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(surname))
+                {
+                    Console.WriteLine("All fields are required. Account creation failed.");
+                    return;
+                }
+
+                if (isManager)
+                {
+                    app.AddManager(login, password, name, surname);
+                    Console.WriteLine("✅ Manager account created successfully.");
+                }
+                else
+                {
+                    app.AddWorker(login, password, name, surname);
+                    Console.WriteLine("✅ Worker account created successfully.");
+                }
+            }
+            catch (Exception ex)
+            {
+                // This will catch the exception if the login already exists
+                Console.WriteLine($"⚠️ Error creating account: {ex.Message}");
             }
         }
     }

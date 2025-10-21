@@ -1,13 +1,18 @@
-﻿using System.Text.Json.Serialization;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace CV_3_project.Models
 {
-    [JsonDerivedType(typeof(Manager), typeDiscriminator: "manager")]
-    [JsonDerivedType(typeof(Worker), typeDiscriminator: "worker")]
-    public class Account
+    [BsonDiscriminator(Required = true)]
+    [BsonKnownTypes(typeof(Manager), typeof(Worker))]
+    public abstract class Account
     {
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string Id { get; set; }
+
         public string Login { get; set; }
-        public string Password { get; set; } 
+        public string Password { get; set; }
         public string Name { get; set; }
         public string Surname { get; set; }
 
