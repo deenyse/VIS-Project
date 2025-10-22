@@ -6,7 +6,7 @@ namespace CV_3_project.Repositories
     {
         void Add(Shift shift);
         void Update(Shift shift);
-        Shift? GetById(string mongoId); // Теперь принимаем string
+        Shift? GetById(int id);
         List<Shift> GetAll();
     }
 }

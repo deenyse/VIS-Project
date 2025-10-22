@@ -6,7 +6,7 @@ namespace CV_3_project.Repositories
     {
         void Add(Account account);
         Account? GetByLogin(string login);
-        Account? GetById(string mongoId); // Поиск по MongoId
+        Account? GetById(int id);
         List<Account> GetAll();
     }
 }

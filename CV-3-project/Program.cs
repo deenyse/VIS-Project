@@ -132,7 +132,7 @@ namespace CV_3_project
             foreach (var (shift, worker) in assignedShifts)
             {
                 string workerName = worker != null ? $"{worker.Name} {worker.Surname}" : "Unknown Worker";
-                Console.WriteLine($"Shift ID: {shift.MongoId}, Start: {shift.StartTime}, End: {shift.EndTime}, Worker: {workerName}");
+                Console.WriteLine($"Shift ID: {shift.Id}, Start: {shift.StartTime}, End: {shift.EndTime}, Worker: {workerName}");
             }
         }
 
@@ -142,14 +142,14 @@ namespace CV_3_project
             Console.WriteLine("--- Available Shifts ---");
             foreach (var shift in availableShifts)
             {
-                Console.WriteLine($"Shift ID: {shift.MongoId}, Start: {shift.StartTime}, End: {shift.EndTime}");
+                Console.WriteLine($"Shift ID: {shift.Id}, Start: {shift.StartTime}, End: {shift.EndTime}");
             }
         }
 
         private static void AssignToShift(Application app)
         {
             Console.Write("Enter Shift ID to assign: ");
-            string shiftId = Console.ReadLine();
+            int shiftId = int.Parse(Console.ReadLine());
 
             if (app.AssignToShift(shiftId))
                 Console.WriteLine("Successfully assigned to shift");

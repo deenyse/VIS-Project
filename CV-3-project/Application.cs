@@ -5,7 +5,7 @@ namespace CV_3_project
     class Application
     {
         private readonly IUnitOfWork _unitOfWork;
-        public Account? signedInUser = null; // Теперь храним весь объект пользователя
+        public Account? signedInUser = null;
 
         public Application(IUnitOfWork unitOfWork)
         {
@@ -34,7 +34,7 @@ namespace CV_3_project
             return true;
         }
 
-        public bool AssignToShift(string shiftId)
+        public bool AssignToShift(int shiftId)
         {
             if (signedInUser == null) return false;
 
@@ -43,7 +43,7 @@ namespace CV_3_project
                 return false;
 
             bool hasConflict = _unitOfWork.Shifts.GetAll().Any(s =>
-                s.AssignedWorkerId == signedInUser.MongoId &&
+                s.AssignedWorkerId == signedInUser.Id &&
                 s.StartTime < shift.EndTime &&
                 s.EndTime > shift.StartTime
             );
@@ -51,7 +51,7 @@ namespace CV_3_project
             if (hasConflict)
                 return false;
 
-            shift.AssignedWorkerId = signedInUser.MongoId;
+            shift.AssignedWorkerId = signedInUser.Id;
             _unitOfWork.Shifts.Update(shift);
             _unitOfWork.SaveChanges();
             return true;
@@ -60,7 +60,7 @@ namespace CV_3_project
         public bool Login(string login, string password)
         {
             var account = _unitOfWork.Accounts.GetByLogin(login);
-            if (account != null && account.Password == password) // Проверка пароля (в проде - хеша)
+            if (account != null && account.Password == password)
             {
                 signedInUser = account;
                 return true;
@@ -83,14 +83,20 @@ namespace CV_3_project
             return _unitOfWork.Shifts.GetAll().Where(s => s.AssignedWorkerId == null).ToList();
         }
 
-        // Возвращаем кортеж для удобного отображения информации
         public List<(Shift shift, Account? worker)> GetAssignedShiftsWithWorker()
         {
-            var assignedShifts = _unitOfWork.Shifts.GetAll().Where(s => s.AssignedWorkerId != null).ToList();
-            var workers = _unitOfWork.Accounts.GetAll()
-                           .ToDictionary(a => a.MongoId, a => a);
+            var assignedShifts = _unitOfWork.Shifts.GetAll()
+                .Where(s => s.AssignedWorkerId != null)
+                .ToList();
 
-            return assignedShifts.Select(s => (s, workers.GetValueOrDefault(s.AssignedWorkerId!))).ToList();
+            var workers = _unitOfWork.Accounts.GetAll()
+                .ToDictionary(a => a.Id, a => a);
+
+            return assignedShifts.Select(s =>
+            {
+                Account? worker = workers.GetValueOrDefault(s.AssignedWorkerId!.Value);
+                return (s, worker);
+            }).ToList();
         }
     }
 }

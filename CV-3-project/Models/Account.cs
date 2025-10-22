@@ -1,5 +1,4 @@
-﻿using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
+﻿using MongoDB.Bson.Serialization.Attributes;
 
 namespace CV_3_project.Models
 {
@@ -7,18 +6,14 @@ namespace CV_3_project.Models
     public abstract class Account
     {
         [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
-        public string MongoId { get; set; }
+        public int Id { get; set; }
 
         public string Login { get; set; }
         public string Password { get; set; }
         public string Name { get; set; }
         public string Surname { get; set; }
-
         public ContactInfo Contacts { get; set; }
-
         public UserSettings Settings { get; set; }
-
         protected Account(string login, string password, string name, string surname, ContactInfo contacts)
         {
             Login = login;
