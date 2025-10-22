@@ -1,139 +1,162 @@
-﻿namespace CV_3_project
+﻿using CV_3_project.Models;
+
+namespace CV_3_project
 {
     internal class Program
     {
         static void Main(string[] args)
         {
-            // Create a single instance of the Unit of Work using the new MongoDB implementation
             IUnitOfWork unitOfWork = new MongoUnitOfWork();
-
-            // Pass it to the application
             Application app = new Application(unitOfWork);
 
             while (true)
             {
                 Console.WriteLine("\n--- Shift Management System ---");
                 Console.WriteLine("Select an option:");
-                if (app.signedInUserLogin == null)
+                if (app.signedInUser == null)
                 {
                     Console.WriteLine("1. Login");
                     Console.WriteLine("2. Create Manager Account");
                     Console.WriteLine("3. Create Worker Account");
                 }
-                else if (app.IsManager())
+                else
                 {
-                    Console.WriteLine("1. Add Shift");
-                    Console.WriteLine("2. View Assigned Shifts");
-                    Console.WriteLine("3. Logout");
-                }
-                else // Worker
-                {
-                    Console.WriteLine("1. View Available Shifts");
-                    Console.WriteLine("2. Assign to Shift");
-                    Console.WriteLine("3. Logout");
+                    Console.WriteLine($"Logged in as: {app.signedInUser.Name} {app.signedInUser.Surname}");
+                    if (app.IsManager())
+                    {
+                        Console.WriteLine("1. Add Shift");
+                        Console.WriteLine("2. View Assigned Shifts");
+                        Console.WriteLine("3. Logout");
+                    }
+                    else // Worker
+                    {
+                        Console.WriteLine("1. View Available Shifts");
+                        Console.WriteLine("2. Assign to Shift");
+                        Console.WriteLine("3. Logout");
+                    }
                 }
 
                 string choice = Console.ReadLine();
 
-                if (app.signedInUserLogin == null)
+                if (app.signedInUser == null)
                 {
-                    if (choice == "1")
+                    switch (choice)
                     {
-                        Console.Write("Enter login: ");
-                        string login = Console.ReadLine();
-                        Console.Write("Enter password: ");
-                        string password = Console.ReadLine();
-
-                        if (app.Login(login, password))
-                            Console.WriteLine("Login successful");
-                        else
-                            Console.WriteLine("Login failed");
-                    }
-                    else if (choice == "2")
-                    {
-                        // Create Manager Account
-                        CreateAccount(app, isManager: true);
-                    }
-                    else if (choice == "3")
-                    {
-                        // Create Worker Account
-                        CreateAccount(app, isManager: false);
+                        case "1":
+                            Login(app);
+                            break;
+                        case "2":
+                            CreateAccount(app, isManager: true);
+                            break;
+                        case "3":
+                            CreateAccount(app, isManager: false);
+                            break;
                     }
                 }
                 else if (app.IsManager())
                 {
-                    if (choice == "1")
+                    switch (choice)
                     {
-                        Console.Write("Enter shift start time (yyyy-MM-dd HH:mm): ");
-                        if (DateTime.TryParse(Console.ReadLine(), out DateTime startTime))
-                        {
-                            Console.Write("Enter shift end time (yyyy-MM-dd HH:mm): ");
-                            if (DateTime.TryParse(Console.ReadLine(), out DateTime endTime))
-                            {
-                                if (app.AddShift(startTime, endTime))
-                                    Console.WriteLine("Shift added successfully");
-                                else
-                                    Console.WriteLine("Failed to add shift");
-                            }
-                            else { Console.WriteLine("Invalid date format."); }
-                        }
-                        else { Console.WriteLine("Invalid date format."); }
-                    }
-                    else if (choice == "2")
-                    {
-                        var assignedShifts = app.GetAssignedShifts();
-                        Console.WriteLine("--- Assigned Shifts ---");
-                        foreach (var shift in assignedShifts)
-                        {
-                            Console.WriteLine($"Shift ID: {shift.Id}, Start: {shift.StartTime}, End: {shift.EndTime}, Worker: {shift.AssignedWorkerLogin}");
-                        }
-                    }
-                    else if (choice == "3")
-                    {
-                        app.Logout();
-                        Console.WriteLine("Logged out");
+                        case "1":
+                            AddShift(app);
+                            break;
+                        case "2":
+                            ViewAssignedShifts(app);
+                            break;
+                        case "3":
+                            Logout(app);
+                            break;
                     }
                 }
                 else // Worker
                 {
-                    if (choice == "1")
+                    switch (choice)
                     {
-                        var availableShifts = app.GetAvailableShifts();
-                        Console.WriteLine("--- Available Shifts ---");
-                        foreach (var shift in availableShifts)
-                        {
-                            Console.WriteLine($"Shift ID: {shift.Id}, Start: {shift.StartTime}, End: {shift.EndTime}");
-                        }
-                    }
-                    else if (choice == "2")
-                    {
-                        Console.Write("Enter Shift ID to assign: ");
-                        if (int.TryParse(Console.ReadLine(), out int shiftId))
-                        {
-                            if (app.AssignToShift(shiftId))
-                                Console.WriteLine("Successfully assigned to shift");
-                            else
-                                Console.WriteLine("Failed to assign to shift (maybe it's taken or conflicts with your schedule).");
-                        }
-                        else
-                        {
-                            Console.WriteLine("Invalid ID.");
-                        }
-                    }
-                    else if (choice == "3")
-                    {
-                        app.Logout();
-                        Console.WriteLine("Logged out");
+                        case "1":
+                            ViewAvailableShifts(app);
+                            break;
+                        case "2":
+                            AssignToShift(app);
+                            break;
+                        case "3":
+                            Logout(app);
+                            break;
                     }
                 }
             }
         }
 
-        /// <summary>
-        /// Handles the logic for creating a new user account.
-        /// </summary>
-        /// <param name="app">The application instance.</param>
-        /// <param name="isManager">True to create a Manager, false to create a Worker.</param>
+        private static void Login(Application app)
+        {
+            Console.Write("Enter login: ");
+            string login = Console.ReadLine();
+            Console.Write("Enter password: ");
+            string password = Console.ReadLine();
+
+            if (app.Login(login, password))
+                Console.WriteLine("✅ Login successful");
+            else
+                Console.WriteLine("Login failed");
+        }
+
+        private static void Logout(Application app)
+        {
+            app.Logout();
+            Console.WriteLine("Logged out");
+        }
+
+        private static void AddShift(Application app)
+        {
+            try
+            {
+                Console.Write("Enter shift start time (yyyy-MM-dd HH:mm): ");
+                DateTime startTime = DateTime.Parse(Console.ReadLine());
+                Console.Write("Enter shift end time (yyyy-MM-dd HH:mm): ");
+                DateTime endTime = DateTime.Parse(Console.ReadLine());
+
+                if (app.AddShift(startTime, endTime))
+                    Console.WriteLine("Shift added successfully");
+                else
+                    Console.WriteLine("Failed to add shift");
+            }
+            catch (FormatException)
+            {
+                Console.WriteLine("Invalid date format.");
+            }
+        }
+
+        private static void ViewAssignedShifts(Application app)
+        {
+            var assignedShifts = app.GetAssignedShiftsWithWorker();
+            Console.WriteLine("--- Assigned Shifts ---");
+            foreach (var (shift, worker) in assignedShifts)
+            {
+                string workerName = worker != null ? $"{worker.Name} {worker.Surname}" : "Unknown Worker";
+                Console.WriteLine($"Shift ID: {shift.MongoId}, Start: {shift.StartTime}, End: {shift.EndTime}, Worker: {workerName}");
+            }
+        }
+
+        private static void ViewAvailableShifts(Application app)
+        {
+            var availableShifts = app.GetAvailableShifts();
+            Console.WriteLine("--- Available Shifts ---");
+            foreach (var shift in availableShifts)
+            {
+                Console.WriteLine($"Shift ID: {shift.MongoId}, Start: {shift.StartTime}, End: {shift.EndTime}");
+            }
+        }
+
+        private static void AssignToShift(Application app)
+        {
+            Console.Write("Enter Shift ID to assign: ");
+            string shiftId = Console.ReadLine();
+
+            if (app.AssignToShift(shiftId))
+                Console.WriteLine("Successfully assigned to shift");
+            else
+                Console.WriteLine("Failed to assign to shift (maybe it's taken or conflicts with your schedule).");
+        }
+
         private static void CreateAccount(Application app, bool isManager)
         {
             try
@@ -146,27 +169,32 @@
                 string name = Console.ReadLine();
                 Console.Write("Enter surname: ");
                 string surname = Console.ReadLine();
+                Console.Write("Enter email: ");
+                string email = Console.ReadLine();
+                Console.Write("Enter phone number: ");
+                string phone = Console.ReadLine();
 
                 if (string.IsNullOrWhiteSpace(login) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(surname))
                 {
-                    Console.WriteLine("All fields are required. Account creation failed.");
+                    Console.WriteLine("Login, password, name, and surname are required. Account creation failed.");
                     return;
                 }
 
+                var contacts = new ContactInfo(email, phone);
+
                 if (isManager)
                 {
-                    app.AddManager(login, password, name, surname);
+                    app.AddManager(login, password, name, surname, contacts);
                     Console.WriteLine("✅ Manager account created successfully.");
                 }
                 else
                 {
-                    app.AddWorker(login, password, name, surname);
+                    app.AddWorker(login, password, name, surname, contacts);
                     Console.WriteLine("✅ Worker account created successfully.");
                 }
             }
             catch (Exception ex)
             {
-                // This will catch the exception if the login already exists
                 Console.WriteLine($"⚠️ Error creating account: {ex.Message}");
             }
         }

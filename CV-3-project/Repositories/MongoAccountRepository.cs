@@ -30,5 +30,10 @@ namespace CV_3_project.Repositories
         {
             return _accounts.Find(a => a.Login == login).FirstOrDefault();
         }
+
+        public Account? GetById(string mongoId)
+        {
+            return _accounts.Find(a => a.MongoId == mongoId).FirstOrDefault();
+        }
     }
 }

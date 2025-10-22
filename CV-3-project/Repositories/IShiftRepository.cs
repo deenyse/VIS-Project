@@ -1,5 +1,4 @@
 ﻿using CV_3_project.Models;
-using System.Collections.Generic;
 
 namespace CV_3_project.Repositories
 {
@@ -7,7 +6,7 @@ namespace CV_3_project.Repositories
     {
         void Add(Shift shift);
         void Update(Shift shift);
-        Shift? GetById(int id);
+        Shift? GetById(string mongoId); // Теперь принимаем string
         List<Shift> GetAll();
     }
 }

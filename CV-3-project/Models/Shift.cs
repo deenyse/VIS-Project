@@ -9,13 +9,13 @@ namespace CV_3_project.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string MongoId { get; set; }
 
-        // Existing integer Id for application logic
-        public int Id { get; set; }
+        // Целочисленный ID больше не нужен, MongoId - наш уникальный ключ
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
-        public string? AssignedWorkerLogin { get; set; } = null;
 
-        public Shift() { }
+        // Паттерн "Foreign Key Mapping" - ссылка на MongoId работника
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string? AssignedWorkerId { get; set; } = null;
 
         public Shift(DateTime startTime, DateTime endTime)
         {

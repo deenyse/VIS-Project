@@ -2,9 +2,7 @@
 {
     public class Manager : Account
     {
-        public Manager() { }
-
-        public Manager(string login, string password, string name, string surname)
-            : base(login, password, name, surname) { }
+        public Manager(string login, string password, string name, string surname, ContactInfo contacts)
+            : base(login, password, name, surname, contacts) { }
     }
 }

@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using CV_3_project.Models;
+﻿using CV_3_project.Models;
 
 namespace CV_3_project.Repositories
 {
@@ -7,6 +6,7 @@ namespace CV_3_project.Repositories
     {
         void Add(Account account);
         Account? GetByLogin(string login);
+        Account? GetById(string mongoId); // Поиск по MongoId
         List<Account> GetAll();
     }
 }

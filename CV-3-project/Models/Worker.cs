@@ -2,9 +2,7 @@
 {
     public class Worker : Account
     {
-        public Worker() { }
-
-        public Worker(string login, string password, string name, string surname)
-            : base(login, password, name, surname) { }
+        public Worker(string login, string password, string name, string surname, ContactInfo contacts)
+            : base(login, password, name, surname, contacts) { }
     }
 }

@@ -14,9 +14,7 @@ namespace CV_3_project.Repositories
 
         public void Add(Shift shift)
         {
-            // Get the last max Id and increment it
-            var maxId = _shifts.Find(s => true).SortByDescending(s => s.Id).Limit(1).FirstOrDefault()?.Id ?? 0;
-            shift.Id = maxId + 1;
+            // Ручная генерация ID больше не нужна
             _shifts.InsertOne(shift);
         }
 
@@ -25,14 +23,15 @@ namespace CV_3_project.Repositories
             return _shifts.Find(shift => true).ToList();
         }
 
-        public Shift? GetById(int id)
+        public Shift? GetById(string mongoId)
         {
-            return _shifts.Find(s => s.Id == id).FirstOrDefault();
+            return _shifts.Find(s => s.MongoId == mongoId).FirstOrDefault();
         }
 
         public void Update(Shift shift)
         {
-            _shifts.ReplaceOne(s => s.Id == shift.Id, shift);
+            // Используем MongoId для поиска документа для замены
+            _shifts.ReplaceOne(s => s.MongoId == shift.MongoId, shift);
         }
     }
 }

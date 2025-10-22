@@ -14,7 +14,6 @@ namespace CV_3_project
         {
             const string connectionUri = "mongodb+srv://system:FRX56Ar8SnuQqa3q@shiftmanager.foyyhor.mongodb.net/?retryWrites=true&w=majority&appName=ShiftManager";
 
-            // Имя базы данных можно задать любое, например "ShiftsDB"
             var databaseName = "ShiftsDB";
 
             var client = new MongoClient(connectionUri);
