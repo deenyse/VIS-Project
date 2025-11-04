@@ -1,10 +1,7 @@
-﻿using MongoDB.Bson.Serialization.Attributes;
-
-namespace CV_3_project.Models
+﻿namespace CV_3_project.Models
 {
     public class Shift
     {
-        [BsonId]
         public int Id { get; set; }
 
         public DateTime StartTime { get; set; }

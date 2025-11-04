@@ -1,8 +1,19 @@
-﻿namespace CV_3_project.Models
+﻿using MongoDB.Bson.Serialization.Attributes;
+
+namespace CV_3_project.Models
 {
+
+    [BsonDiscriminator("Worker")]
+
     public class Worker : Account
     {
-        public Worker(string login, string password, string name, string surname, ContactInfo contacts)
-            : base(login, password, name, surname, contacts) { }
+        public string position { get; set; }
+
+        public Worker(string login, string password, string name, string surname, ContactInfo contacts, string position)
+            : base(login, password, name, surname, contacts)
+        {
+
+            this.position = position;
+        }
     }
 }

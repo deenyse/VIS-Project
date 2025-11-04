@@ -174,6 +174,7 @@ namespace CV_3_project
                 Console.Write("Enter phone number: ");
                 string phone = Console.ReadLine();
 
+
                 if (string.IsNullOrWhiteSpace(login) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(surname))
                 {
                     Console.WriteLine("Login, password, name, and surname are required. Account creation failed.");
@@ -189,7 +190,11 @@ namespace CV_3_project
                 }
                 else
                 {
-                    app.AddWorker(login, password, name, surname, contacts);
+                    Console.Write("Enter Working Position: ");
+                    string position = Console.ReadLine();
+
+
+                    app.AddWorker(login, password, name, surname, contacts, position);
                     Console.WriteLine("✅ Worker account created successfully.");
                 }
             }

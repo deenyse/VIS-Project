@@ -18,9 +18,9 @@ namespace CV_3_project
             _unitOfWork.SaveChanges();
         }
 
-        public void AddWorker(string login, string password, string name, string surname, ContactInfo contacts)
+        public void AddWorker(string login, string password, string name, string surname, ContactInfo contacts, string position)
         {
-            _unitOfWork.Accounts.Add(new Worker(login, password, name, surname, contacts));
+            _unitOfWork.Accounts.Add(new Worker(login, password, name, surname, contacts, position));
             _unitOfWork.SaveChanges();
         }
 

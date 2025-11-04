@@ -2,10 +2,13 @@
 
 namespace CV_3_project.Models
 {
+    // Атрибуты для STI:
+    // BsonDiscriminator: Говорит, что это базовый класс иерархии
+    // BsonKnownTypes: Перечисляет все возможные классы-потомки
+    [BsonDiscriminator(Required = true, RootClass = true)]
     [BsonKnownTypes(typeof(Manager), typeof(Worker))]
     public abstract class Account
     {
-        [BsonId]
         public int Id { get; set; }
 
         public string Login { get; set; }
