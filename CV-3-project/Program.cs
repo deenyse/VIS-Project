@@ -12,21 +12,24 @@ namespace CV_3_project
             while (true)
             {
                 Console.WriteLine("\n--- Shift Management System ---");
-                Console.WriteLine("Select an option:");
-                if (app.signedInUser == null)
+
+                // <-- Mod: Check for SC
+                if (app.signedInUser is GuestAccount)
                 {
+                    Console.WriteLine("Logged in as: Guest");
                     Console.WriteLine("1. Login");
                     Console.WriteLine("2. Create Manager Account");
                     Console.WriteLine("3. Create Worker Account");
                 }
                 else
                 {
-                    Console.WriteLine($"Logged in as: {app.signedInUser.Name} {app.signedInUser.Surname}");
+                    Console.WriteLine($"Logged in as: {app.signedInUser.Name} {app.signedInUser.Surname} (ID: {app.signedInUser.Id})");
                     if (app.IsManager())
                     {
                         Console.WriteLine("1. Add Shift");
                         Console.WriteLine("2. View Assigned Shifts");
-                        Console.WriteLine("3. Logout");
+                        Console.WriteLine("3. Send Notification to Worker"); // <-- Mod: New option
+                        Console.WriteLine("4. Logout");
                     }
                     else // Worker
                     {
@@ -38,7 +41,7 @@ namespace CV_3_project
 
                 string choice = Console.ReadLine();
 
-                if (app.signedInUser == null)
+                if (app.signedInUser is GuestAccount) // <-- Mod: Check for SC
                 {
                     switch (choice)
                     {
@@ -64,6 +67,9 @@ namespace CV_3_project
                             ViewAssignedShifts(app);
                             break;
                         case "3":
+                            SendNotification(app); // <-- Mod: New option
+                            break;
+                        case "4":
                             Logout(app);
                             break;
                     }
@@ -94,9 +100,36 @@ namespace CV_3_project
             string password = Console.ReadLine();
 
             if (app.Login(login, password))
+            {
                 Console.WriteLine("✅ Login successful");
+
+                // <-- Mod: Check notifications on login
+                CheckNotifications(app);
+            }
             else
+            {
                 Console.WriteLine("Login failed");
+            }
+        }
+
+        // <-- Mod: New method
+        private static void CheckNotifications(Application app)
+        {
+            Console.WriteLine("\n--- Checking for notifications ---");
+            var notifications = app.GetAndClearUserNotifications(app.signedInUser.Id);
+            if (!notifications.Any())
+            {
+                Console.WriteLine("No Notifications.");
+            }
+            else
+            {
+                Console.WriteLine($"You have {notifications.Count} new notification(s):");
+                foreach (var notification in notifications)
+                {
+                    Console.WriteLine($"[{notification.CreatedAt:g}] {notification.Message}");
+                }
+            }
+            Console.WriteLine("--- End of notifications ---\n");
         }
 
         private static void Logout(Application app)
@@ -117,7 +150,7 @@ namespace CV_3_project
                 if (app.AddShift(startTime, endTime))
                     Console.WriteLine("Shift added successfully");
                 else
-                    Console.WriteLine("Failed to add shift");
+                    Console.WriteLine("Failed to add shift (check validation errors or invariant rules).");
             }
             catch (FormatException)
             {
@@ -131,8 +164,10 @@ namespace CV_3_project
             Console.WriteLine("--- Assigned Shifts ---");
             foreach (var (shift, worker) in assignedShifts)
             {
-                string workerName = worker != null ? $"{worker.Name} {worker.Surname}" : "Unknown Worker";
-                Console.WriteLine($"Shift ID: {shift.Id}, Start: {shift.StartTime}, End: {shift.EndTime}, Worker: {workerName}");
+                // <-- Mod: Simplified, SC UnknownWorker will handle null
+                string workerName = $"{worker.Name} {worker.Surname}";
+                // <-- Mod: Display VO
+                Console.WriteLine($"Shift ID: {shift.Id}, Period: {shift.Period}, Worker: {workerName}");
             }
         }
 
@@ -142,7 +177,8 @@ namespace CV_3_project
             Console.WriteLine("--- Available Shifts ---");
             foreach (var shift in availableShifts)
             {
-                Console.WriteLine($"Shift ID: {shift.Id}, Start: {shift.StartTime}, End: {shift.EndTime}");
+                // <-- Mod: Display VO
+                Console.WriteLine($"Shift ID: {shift.Id}, Period: {shift.Period}");
             }
         }
 
@@ -155,6 +191,25 @@ namespace CV_3_project
                 Console.WriteLine("Successfully assigned to shift");
             else
                 Console.WriteLine("Failed to assign to shift (maybe it's taken or conflicts with your schedule).");
+        }
+
+        // <-- Mod: New method
+        private static void SendNotification(Application app)
+        {
+            try
+            {
+                Console.Write("Enter Worker ID to send notification: ");
+                int workerId = int.Parse(Console.ReadLine());
+                Console.Write("Enter message: ");
+                string message = Console.ReadLine();
+
+                app.AddNotification(workerId, message);
+                Console.WriteLine("Notification sent.");
+            }
+            catch (FormatException)
+            {
+                Console.WriteLine("Invalid Worker ID.");
+            }
         }
 
         private static void CreateAccount(Application app, bool isManager)
@@ -174,29 +229,24 @@ namespace CV_3_project
                 Console.Write("Enter phone number: ");
                 string phone = Console.ReadLine();
 
-
-                if (string.IsNullOrWhiteSpace(login) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(surname))
-                {
-                    Console.WriteLine("Login, password, name, and surname are required. Account creation failed.");
-                    return;
-                }
-
                 var contacts = new ContactInfo(email, phone);
+                bool success = false;
 
                 if (isManager)
                 {
-                    app.AddManager(login, password, name, surname, contacts);
-                    Console.WriteLine("✅ Manager account created successfully.");
+                    success = app.AddManager(login, password, name, surname, contacts);
                 }
                 else
                 {
                     Console.Write("Enter Working Position: ");
                     string position = Console.ReadLine();
-
-
-                    app.AddWorker(login, password, name, surname, contacts, position);
-                    Console.WriteLine("✅ Worker account created successfully.");
+                    success = app.AddWorker(login, password, name, surname, contacts, position);
                 }
+
+                if (success)
+                    Console.WriteLine("✅ Account created successfully.");
+                else
+                    Console.WriteLine("⚠️ Failed to create account (check validation).");
             }
             catch (Exception ex)
             {

@@ -9,11 +9,11 @@ namespace CV_3_project
 
         public IAccountRepository Accounts { get; }
         public IShiftRepository Shifts { get; }
+        public INotificationRepository Notifications { get; } // <-- Mod: Added property
 
         public MongoUnitOfWork()
         {
             const string connectionUri = "mongodb+srv://system:FRX56Ar8SnuQqa3q@shiftmanager.foyyhor.mongodb.net/?retryWrites=true&w=majority&appName=ShiftManager";
-
             var databaseName = "ShiftsDB";
 
             var client = new MongoClient(connectionUri);
@@ -21,19 +21,15 @@ namespace CV_3_project
 
             Accounts = new MongoAccountRepository(_database);
             Shifts = new MongoShiftRepository(_database);
+            Notifications = new MongoNotificationRepository(_database); // <-- Mod: Initialization
         }
 
-        // With MongoDB, changes are saved as they happen.
-        // This method is kept to satisfy the interface contract.
         public void SaveChanges()
         {
-            // No explicit transaction commit needed for this basic setup.
         }
 
         public void Dispose()
         {
-            // The MongoDB driver manages connections automatically.
-            // No explicit disposal is necessary here.
         }
     }
 }

@@ -2,14 +2,11 @@
 
 namespace CV_3_project.Models
 {
-    // Атрибуты для STI:
-    // BsonDiscriminator: Говорит, что это базовый класс иерархии
-    // BsonKnownTypes: Перечисляет все возможные классы-потомки
     [BsonDiscriminator(Required = true, RootClass = true)]
-    [BsonKnownTypes(typeof(Manager), typeof(Worker))]
-    public abstract class Account
+    [BsonKnownTypes(typeof(Manager), typeof(Worker), typeof(GuestAccount), typeof(UnknownWorker))]
+    public abstract class Account : BaseEntity // <-- Mod: Inherits from BaseEntity
     {
-        public int Id { get; set; }
+        // public int Id { get; set; } // <-- Mod: Removed (now in BaseEntity)
 
         public string Login { get; set; }
         public string Password { get; set; }
@@ -17,6 +14,7 @@ namespace CV_3_project.Models
         public string Surname { get; set; }
         public ContactInfo Contacts { get; set; }
         public UserSettings Settings { get; set; }
+
         protected Account(string login, string password, string name, string surname, ContactInfo contacts)
         {
             Login = login;
@@ -25,6 +23,20 @@ namespace CV_3_project.Models
             Surname = surname;
             Contacts = contacts;
             Settings = new UserSettings();
+        }
+
+        // <-- Mod: Added validation method
+        public override void Validate()
+        {
+            base.Validate(); // Clears the list
+            if (string.IsNullOrWhiteSpace(Login))
+                ValidationErrors.Add("Login is required.");
+            if (string.IsNullOrWhiteSpace(Password))
+                ValidationErrors.Add("Password is required.");
+            if (string.IsNullOrWhiteSpace(Name))
+                ValidationErrors.Add("Name is required.");
+            if (string.IsNullOrWhiteSpace(Surname))
+                ValidationErrors.Add("Surname is required.");
         }
     }
 }
