@@ -1,4 +1,6 @@
-﻿using CV_3_project.Models;
+﻿using CV_3_project.EventSystem;  // <-- Добавлено
+using CV_3_project.Models;
+using CV_3_project.Observers;    // <-- Добавлено
 
 namespace CV_3_project
 {
@@ -6,12 +8,25 @@ namespace CV_3_project
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly AccountFactory _accountFactory;
+        private readonly EventManager _eventManager;
+
         public Account signedInUser { get; private set; } = new GuestAccount();
 
         public Application(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
             _accountFactory = new AccountFactory();
+            _eventManager = new EventManager();
+        }
+
+        public void RegisterObserver(IObserver observer)
+        {
+            _eventManager.Register(observer);
+        }
+
+        public void UnregisterObserver(IObserver observer)
+        {
+            _eventManager.Unregister(observer);
         }
 
         private bool AddAccountInternal(AccountType type, AccountCreationArgs args)
@@ -39,6 +54,7 @@ namespace CV_3_project
                 return false;
             }
         }
+
         public bool AddManager(string login, string password, string name, string surname, ContactInfo contacts)
         {
             var args = new AccountCreationArgs
@@ -49,7 +65,6 @@ namespace CV_3_project
                 Surname = surname,
                 Contacts = contacts
             };
-
             return AddAccountInternal(AccountType.Manager, args);
         }
 
@@ -64,9 +79,9 @@ namespace CV_3_project
                 Contacts = contacts,
                 Position = position
             };
-
             return AddAccountInternal(AccountType.Worker, args);
         }
+
         public bool AddShift(DateTime startTime, DateTime endTime)
         {
             if (!IsManager())
@@ -74,11 +89,9 @@ namespace CV_3_project
 
             try
             {
-                // <-- Mod: Create VO
                 var period = new TimeRange(startTime, endTime);
                 var shift = new Shift(period);
 
-                // <-- Mod: Call LS validation
                 shift.Validate();
                 if (!shift.IsValid)
                 {
@@ -91,16 +104,13 @@ namespace CV_3_project
                 _unitOfWork.Shifts.Add(shift);
                 _unitOfWork.SaveChanges();
 
-                // <-- Mod: Send notifications to all workers
-                var workers = _unitOfWork.Accounts.GetAll().OfType<Worker>();
-                foreach (var worker in workers)
-                {
-                    AddNotification(worker.Id, $"New shift added: {shift.Period}");
-                }
+
+                var eventData = new ShiftEventData(shift, null);
+                _eventManager.Notify("NewShift", eventData);
 
                 return true;
             }
-            catch (ArgumentException ex) // <-- Mod: Catch VO invariant error
+            catch (ArgumentException ex)
             {
                 Console.WriteLine($"Error creating shift: {ex.Message}");
                 return false;
@@ -109,7 +119,7 @@ namespace CV_3_project
 
         public bool AssignToShift(int shiftId)
         {
-            if (signedInUser is GuestAccount) return false; // <-- Mod: Check for SC
+            if (signedInUser is GuestAccount) return false;
 
             var shift = _unitOfWork.Shifts.GetById(shiftId);
             if (shift == null || shift.AssignedWorkerId != null)
@@ -117,24 +127,21 @@ namespace CV_3_project
 
             bool hasConflict = _unitOfWork.Shifts.GetAll().Any(s =>
                 s.AssignedWorkerId == signedInUser.Id &&
-                s.Period.StartTime < shift.Period.EndTime && // <-- Mod: Using VO
-                s.Period.EndTime > shift.Period.StartTime   // <-- Mod: Using VO
+                s.Period.StartTime < shift.Period.EndTime &&
+                s.Period.EndTime > shift.Period.StartTime
             );
 
             if (hasConflict)
                 return false;
 
             shift.AssignedWorkerId = signedInUser.Id;
-            shift.MarkUpdated(); // <-- Mod: Call LS
+            shift.MarkUpdated();
             _unitOfWork.Shifts.Update(shift);
             _unitOfWork.SaveChanges();
 
-            // <-- Mod: Notify manager
-            var managers = _unitOfWork.Accounts.GetAll().OfType<Manager>();
-            foreach (var manager in managers)
-            {
-                AddNotification(manager.Id, $"Worker {signedInUser.Name} assigned to shift {shift.Id}");
-            }
+
+            var eventData = new ShiftEventData(shift, signedInUser);
+            _eventManager.Notify("ShiftAssigned", eventData);
 
             return true;
         }
@@ -152,7 +159,7 @@ namespace CV_3_project
 
         public void Logout()
         {
-            signedInUser = new GuestAccount(); // <-- Mod: Set SC
+            signedInUser = new GuestAccount();
         }
 
         public bool IsManager()
@@ -178,13 +185,11 @@ namespace CV_3_project
             {
                 Account? worker = workers.GetValueOrDefault(s.AssignedWorkerId!.Value);
                 if (worker == null)
-                    worker = new UnknownWorker(); // <-- Mod: Use SC
+                    worker = new UnknownWorker();
 
                 return (s, worker);
             }).ToList();
         }
-
-        // <-- Mod: New methods for notification system
 
         public void AddNotification(int userId, string message)
         {

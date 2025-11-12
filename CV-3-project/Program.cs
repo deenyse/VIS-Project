@@ -1,4 +1,5 @@
 ﻿using CV_3_project.Models;
+using CV_3_project.Observers;
 
 namespace CV_3_project
 {
@@ -9,11 +10,13 @@ namespace CV_3_project
             IUnitOfWork unitOfWork = new MongoUnitOfWork();
             Application app = new Application(unitOfWork);
 
+            app.RegisterObserver(new WorkerNotifier(unitOfWork));
+            app.RegisterObserver(new ManagerNotifier(unitOfWork));
+
             while (true)
             {
                 Console.WriteLine("\n--- Shift Management System ---");
 
-                // <-- Mod: Check for SC
                 if (app.signedInUser is GuestAccount)
                 {
                     Console.WriteLine("Logged in as: Guest");
@@ -28,7 +31,7 @@ namespace CV_3_project
                     {
                         Console.WriteLine("1. Add Shift");
                         Console.WriteLine("2. View Assigned Shifts");
-                        Console.WriteLine("3. Send Notification to Worker"); // <-- Mod: New option
+                        Console.WriteLine("3. Send Notification to Worker");
                         Console.WriteLine("4. Logout");
                     }
                     else // Worker
@@ -41,7 +44,7 @@ namespace CV_3_project
 
                 string choice = Console.ReadLine();
 
-                if (app.signedInUser is GuestAccount) // <-- Mod: Check for SC
+                if (app.signedInUser is GuestAccount)
                 {
                     switch (choice)
                     {
@@ -67,7 +70,7 @@ namespace CV_3_project
                             ViewAssignedShifts(app);
                             break;
                         case "3":
-                            SendNotification(app); // <-- Mod: New option
+                            SendNotification(app);
                             break;
                         case "4":
                             Logout(app);
@@ -102,8 +105,6 @@ namespace CV_3_project
             if (app.Login(login, password))
             {
                 Console.WriteLine("✅ Login successful");
-
-                // <-- Mod: Check notifications on login
                 CheckNotifications(app);
             }
             else
@@ -112,7 +113,6 @@ namespace CV_3_project
             }
         }
 
-        // <-- Mod: New method
         private static void CheckNotifications(Application app)
         {
             Console.WriteLine("\n--- Checking for notifications ---");
@@ -164,9 +164,7 @@ namespace CV_3_project
             Console.WriteLine("--- Assigned Shifts ---");
             foreach (var (shift, worker) in assignedShifts)
             {
-                // <-- Mod: Simplified, SC UnknownWorker will handle null
                 string workerName = $"{worker.Name} {worker.Surname}";
-                // <-- Mod: Display VO
                 Console.WriteLine($"Shift ID: {shift.Id}, Period: {shift.Period}, Worker: {workerName}");
             }
         }
@@ -177,7 +175,6 @@ namespace CV_3_project
             Console.WriteLine("--- Available Shifts ---");
             foreach (var shift in availableShifts)
             {
-                // <-- Mod: Display VO
                 Console.WriteLine($"Shift ID: {shift.Id}, Period: {shift.Period}");
             }
         }
@@ -193,7 +190,6 @@ namespace CV_3_project
                 Console.WriteLine("Failed to assign to shift (maybe it's taken or conflicts with your schedule).");
         }
 
-        // <-- Mod: New method
         private static void SendNotification(Application app)
         {
             try
