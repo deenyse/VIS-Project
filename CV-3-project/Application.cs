@@ -5,66 +5,68 @@ namespace CV_3_project
     class Application
     {
         private readonly IUnitOfWork _unitOfWork;
-        // <-- Mod: Initialize SC GuestAccount
+        private readonly AccountFactory _accountFactory;
         public Account signedInUser { get; private set; } = new GuestAccount();
 
         public Application(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
+            _accountFactory = new AccountFactory();
         }
 
-        public bool AddManager(string login, string password, string name, string surname, ContactInfo contacts)
+        private bool AddAccountInternal(AccountType type, AccountCreationArgs args)
         {
-            var account = new Manager(login, password, name, surname, contacts);
-            // <-- Mod: Call LS validation
-            account.Validate();
-            if (!account.IsValid)
-            {
-                Console.WriteLine("Validation failed:");
-                foreach (var error in account.ValidationErrors)
-                    Console.WriteLine($" - {error}");
-                return false;
-            }
-
             try
             {
+                var account = _accountFactory.CreateAccount(type, args);
+
+                account.Validate();
+                if (!account.IsValid)
+                {
+                    Console.WriteLine("Validation failed:");
+                    foreach (var error in account.ValidationErrors)
+                        Console.WriteLine($" - {error}");
+                    return false;
+                }
+
                 _unitOfWork.Accounts.Add(account);
                 _unitOfWork.SaveChanges();
                 return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error: {ex.Message}");
+                Console.WriteLine($"Error creating account: {ex.Message}");
                 return false;
             }
+        }
+        public bool AddManager(string login, string password, string name, string surname, ContactInfo contacts)
+        {
+            var args = new AccountCreationArgs
+            {
+                Login = login,
+                Password = password,
+                Name = name,
+                Surname = surname,
+                Contacts = contacts
+            };
+
+            return AddAccountInternal(AccountType.Manager, args);
         }
 
         public bool AddWorker(string login, string password, string name, string surname, ContactInfo contacts, string position)
         {
-            var account = new Worker(login, password, name, surname, contacts, position);
-            // <-- Mod: Call LS validation
-            account.Validate();
-            if (!account.IsValid)
+            var args = new AccountCreationArgs
             {
-                Console.WriteLine("Validation failed:");
-                foreach (var error in account.ValidationErrors)
-                    Console.WriteLine($" - {error}");
-                return false;
-            }
+                Login = login,
+                Password = password,
+                Name = name,
+                Surname = surname,
+                Contacts = contacts,
+                Position = position
+            };
 
-            try
-            {
-                _unitOfWork.Accounts.Add(account);
-                _unitOfWork.SaveChanges();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error: {ex.Message}");
-                return false;
-            }
+            return AddAccountInternal(AccountType.Worker, args);
         }
-
         public bool AddShift(DateTime startTime, DateTime endTime)
         {
             if (!IsManager())

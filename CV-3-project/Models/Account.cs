@@ -4,9 +4,8 @@ namespace CV_3_project.Models
 {
     [BsonDiscriminator(Required = true, RootClass = true)]
     [BsonKnownTypes(typeof(Manager), typeof(Worker), typeof(GuestAccount), typeof(UnknownWorker))]
-    public abstract class Account : BaseEntity // <-- Mod: Inherits from BaseEntity
+    public abstract class Account : BaseEntity
     {
-        // public int Id { get; set; } // <-- Mod: Removed (now in BaseEntity)
 
         public string Login { get; set; }
         public string Password { get; set; }
