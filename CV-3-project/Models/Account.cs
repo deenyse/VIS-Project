@@ -8,30 +8,34 @@ namespace CV_3_project.Models
     {
 
         public string Login { get; set; }
-        public string Password { get; set; }
+        //public string Password { get; set; }
+        public string PasswordHash { get; set; }
+        public byte[] PasswordSalt { get; set; }
         public string Name { get; set; }
         public string Surname { get; set; }
         public ContactInfo Contacts { get; set; }
         public UserSettings Settings { get; set; }
 
-        protected Account(string login, string password, string name, string surname, ContactInfo contacts)
+        protected Account(string login, string name, string surname, ContactInfo contacts)
         {
             Login = login;
-            Password = password;
             Name = name;
             Surname = surname;
             Contacts = contacts;
             Settings = new UserSettings();
         }
 
-        // <-- Mod: Added validation method
+        public void SetPassword(string password)
+        {
+            PasswordSalt = Security.SecurityHelper.GenerateSalt();
+            PasswordHash = Security.SecurityHelper.HashPassword(password, PasswordSalt);
+        }
         public override void Validate()
         {
             base.Validate(); // Clears the list
             if (string.IsNullOrWhiteSpace(Login))
                 ValidationErrors.Add("Login is required.");
-            if (string.IsNullOrWhiteSpace(Password))
-                ValidationErrors.Add("Password is required.");
+
             if (string.IsNullOrWhiteSpace(Name))
                 ValidationErrors.Add("Name is required.");
             if (string.IsNullOrWhiteSpace(Surname))

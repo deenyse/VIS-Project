@@ -1,6 +1,6 @@
-﻿using CV_3_project.EventSystem;  // <-- Добавлено
+﻿using CV_3_project.EventSystem;
 using CV_3_project.Models;
-using CV_3_project.Observers;    // <-- Добавлено
+using CV_3_project.Observers;
 
 namespace CV_3_project
 {
@@ -84,11 +84,10 @@ namespace CV_3_project
 
         public bool AddShift(DateTime startTime, DateTime endTime)
         {
-            if (!IsManager())
-                return false;
-
             try
             {
+                Authorize(typeof(Manager));
+
                 var period = new TimeRange(startTime, endTime);
                 var shift = new Shift(period);
 
@@ -119,40 +118,56 @@ namespace CV_3_project
 
         public bool AssignToShift(int shiftId)
         {
-            if (signedInUser is GuestAccount) return false;
+            try
+            {
+                Authorize(typeof(Worker));
 
-            var shift = _unitOfWork.Shifts.GetById(shiftId);
-            if (shift == null || shift.AssignedWorkerId != null)
+                var shift = _unitOfWork.Shifts.GetById(shiftId);
+                if (shift == null || shift.AssignedWorkerId != null)
+                {
+                    Console.WriteLine("Shift not found or already assigned.");
+                    return false;
+                }
+
+                bool hasConflict = _unitOfWork.Shifts.GetAll().Any(s =>
+                    s.AssignedWorkerId == signedInUser.Id &&
+                    s.Period.StartTime < shift.Period.EndTime &&
+                    s.Period.EndTime > shift.Period.StartTime
+                );
+
+                if (hasConflict)
+                {
+                    Console.WriteLine("Shift conflicts with existing schedule.");
+                    return false;
+                }
+
+                shift.AssignedWorkerId = signedInUser.Id;
+                shift.MarkUpdated();
+                _unitOfWork.Shifts.Update(shift);
+                _unitOfWork.SaveChanges();
+
+                var eventData = new ShiftEventData(shift, signedInUser);
+                _eventManager.Notify("ShiftAssigned", eventData);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Action failed: {ex.Message}");
                 return false;
-
-            bool hasConflict = _unitOfWork.Shifts.GetAll().Any(s =>
-                s.AssignedWorkerId == signedInUser.Id &&
-                s.Period.StartTime < shift.Period.EndTime &&
-                s.Period.EndTime > shift.Period.StartTime
-            );
-
-            if (hasConflict)
-                return false;
-
-            shift.AssignedWorkerId = signedInUser.Id;
-            shift.MarkUpdated();
-            _unitOfWork.Shifts.Update(shift);
-            _unitOfWork.SaveChanges();
-
-
-            var eventData = new ShiftEventData(shift, signedInUser);
-            _eventManager.Notify("ShiftAssigned", eventData);
-
-            return true;
+            }
         }
 
         public bool Login(string login, string password)
         {
             var account = _unitOfWork.Accounts.GetByLogin(login);
-            if (account != null && account.Password == password)
+            if (account != null)
             {
-                signedInUser = account;
-                return true;
+                if (Security.SecurityHelper.VerifyPassword(password, account.PasswordHash, account.PasswordSalt))
+                {
+                    signedInUser = account;
+                    return true;
+                }
             }
             return false;
         }
@@ -160,6 +175,14 @@ namespace CV_3_project
         public void Logout()
         {
             signedInUser = new GuestAccount();
+        }
+
+        private void Authorize(Type requiredType)
+        {
+            if (signedInUser.GetType() != requiredType && !signedInUser.GetType().IsSubclassOf(requiredType))
+            {
+                throw new UnauthorizedAccessException("You do not have permission to perform this action.");
+            }
         }
 
         public bool IsManager()
@@ -174,6 +197,8 @@ namespace CV_3_project
 
         public List<(Shift shift, Account worker)> GetAssignedShiftsWithWorker()
         {
+            Authorize(typeof(Manager));
+
             var assignedShifts = _unitOfWork.Shifts.GetAll()
                 .Where(s => s.AssignedWorkerId != null)
                 .ToList();

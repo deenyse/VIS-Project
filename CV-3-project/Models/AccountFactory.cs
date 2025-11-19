@@ -15,8 +15,8 @@ namespace CV_3_project.Models
             switch (type)
             {
                 case AccountType.Manager:
-                    account = new Manager(args.Login, args.Password, args.Name, args.Surname, args.Contacts);
-
+                    account = new Manager(args.Login, args.Name, args.Surname, args.Contacts);
+                    account.SetPassword(args.Password);
                     account.Settings.EmailNotificationsEnabled = true;
                     account.Settings.Theme = "Light";
                     break;
@@ -27,8 +27,8 @@ namespace CV_3_project.Models
                         throw new ArgumentException("Position is required for a Worker.");
                     }
 
-                    var worker = new Worker(args.Login, args.Password, args.Name, args.Surname, args.Contacts, args.Position);
-
+                    var worker = new Worker(args.Login, args.Name, args.Surname, args.Contacts, args.Position);
+                    worker.SetPassword(args.Password);
                     worker.Settings.EmailNotificationsEnabled = false;
                     worker.Settings.Theme = "Dark";
 

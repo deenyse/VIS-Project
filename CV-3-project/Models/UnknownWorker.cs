@@ -6,7 +6,7 @@ namespace CV_3_project.Models
     public class UnknownWorker : Worker
     {
         public UnknownWorker()
-            : base("unknown", "", "Unknown", "Worker", new ContactInfo("", ""), "N/A")
+            : base("unknown", "Unknown", "Worker", new ContactInfo("", ""), "N/A")
         {
         }
     }

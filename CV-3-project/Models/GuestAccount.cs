@@ -6,7 +6,7 @@ namespace CV_3_project.Models
     public class GuestAccount : Account
     {
         public GuestAccount()
-            : base("guest", "", "Guest", "", new ContactInfo("", ""))
+            : base("guest", "Guest", "", new ContactInfo("", ""))
         {
             // Guest account is always valid in the system context
         }

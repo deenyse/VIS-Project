@@ -9,8 +9,8 @@ namespace CV_3_project.Models
     {
         public string position { get; set; }
 
-        public Worker(string login, string password, string name, string surname, ContactInfo contacts, string position)
-            : base(login, password, name, surname, contacts)
+        public Worker(string login, string name, string surname, ContactInfo contacts, string position)
+            : base(login, name, surname, contacts)
         {
 
             this.position = position;
