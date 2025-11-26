@@ -17,6 +17,8 @@ namespace CV_3_project
             _unitOfWork = unitOfWork;
             _accountFactory = new AccountFactory();
             _eventManager = new EventManager();
+
+            EnsureRootAdminExists();
         }
 
         public void RegisterObserver(IObserver observer)
@@ -27,6 +29,28 @@ namespace CV_3_project
         public void UnregisterObserver(IObserver observer)
         {
             _eventManager.Unregister(observer);
+        }
+
+        public void EnsureRootAdminExists()
+        {
+            var adminExists = _unitOfWork.Accounts.GetAll().OfType<AppManager>().Any();
+
+            if (!adminExists)
+            {
+                AccountCreationArgs args = new AccountCreationArgs
+                {
+                    Login = "admin",
+                    Password = "admin",
+                    Name = "Root",
+                    Surname = "Admin",
+                    Contacts = new ContactInfo("root.root", "0")
+                };
+
+                Console.WriteLine("Creating root admin account (admin/admin)...");
+
+                AddAccountInternal(AccountType.AppManager, args);
+
+            }
         }
 
         private bool AddAccountInternal(AccountType type, AccountCreationArgs args)
@@ -57,6 +81,7 @@ namespace CV_3_project
 
         public bool AddManager(string login, string password, string name, string surname, ContactInfo contacts)
         {
+            Authorize(typeof(AppManager));
             var args = new AccountCreationArgs
             {
                 Login = login,
@@ -70,6 +95,7 @@ namespace CV_3_project
 
         public bool AddWorker(string login, string password, string name, string surname, ContactInfo contacts, string position)
         {
+            Authorize(typeof(AppManager));
             var args = new AccountCreationArgs
             {
                 Login = login,
@@ -188,6 +214,10 @@ namespace CV_3_project
         public bool IsManager()
         {
             return signedInUser is Manager;
+        }
+        public bool IsAppManager()
+        {
+            return signedInUser is AppManager;
         }
 
         public List<Shift> GetAvailableShifts()

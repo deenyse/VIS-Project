@@ -15,19 +15,24 @@ namespace CV_3_project
 
             while (true)
             {
+                string choice = "0";
+
                 Console.WriteLine("\n--- Shift Management System ---");
 
                 if (app.signedInUser is GuestAccount)
                 {
-                    Console.WriteLine("Logged in as: Guest");
-                    Console.WriteLine("1. Login");
-                    Console.WriteLine("2. Create Manager Account");
-                    Console.WriteLine("3. Create Worker Account");
+                    Console.WriteLine("Logged in as: Guest! Please provide credentials to sing in.");
                 }
                 else
                 {
                     Console.WriteLine($"Logged in as: {app.signedInUser.Name} {app.signedInUser.Surname} (ID: {app.signedInUser.Id})");
-                    if (app.IsManager())
+                    if (app.IsAppManager())
+                    {
+                        Console.WriteLine("1. Create Manager Account");
+                        Console.WriteLine("2. Create Worker Account");
+                        Console.WriteLine("3. Logout");
+                    }
+                    else if (app.IsManager())
                     {
                         Console.WriteLine("1. Add Shift");
                         Console.WriteLine("2. View Assigned Shifts");
@@ -40,22 +45,26 @@ namespace CV_3_project
                         Console.WriteLine("2. Assign to Shift");
                         Console.WriteLine("3. Logout");
                     }
+                    choice = Console.ReadLine();
                 }
 
-                string choice = Console.ReadLine();
 
                 if (app.signedInUser is GuestAccount)
+                {
+                    Login(app);
+                }
+                else if (app.IsAppManager())
                 {
                     switch (choice)
                     {
                         case "1":
-                            Login(app);
-                            break;
-                        case "2":
                             CreateAccount(app, isManager: true);
                             break;
-                        case "3":
+                        case "2":
                             CreateAccount(app, isManager: false);
+                            break;
+                        case "3":
+                            Logout(app);
                             break;
                     }
                 }

@@ -4,7 +4,8 @@ namespace CV_3_project.Models
     public enum AccountType
     {
         Manager,
-        Worker
+        Worker,
+        AppManager
     }
     public class AccountFactory
     {
@@ -35,6 +36,14 @@ namespace CV_3_project.Models
                     account = worker;
                     break;
 
+                case AccountType.AppManager:
+                    var appManager = new AppManager(args.Login, args.Name, args.Surname, args.Contacts);
+                    appManager.SetPassword(args.Password);
+                    appManager.Settings.EmailNotificationsEnabled = true;
+                    appManager.Settings.Theme = "Light";
+
+                    account = appManager;
+                    break;
                 default:
                     throw new ArgumentException("Invalid account type specified.");
             }

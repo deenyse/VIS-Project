@@ -3,7 +3,8 @@
 namespace CV_3_project.Models
 {
     [BsonDiscriminator(Required = true, RootClass = true)]
-    [BsonKnownTypes(typeof(Manager), typeof(Worker), typeof(GuestAccount), typeof(UnknownWorker))]
+    [BsonKnownTypes(typeof(Manager), typeof(Worker), typeof(GuestAccount), typeof(UnknownWorker), typeof(AppManager))]
+    //[BsonKnownTypes(typeof(Manager), typeof(Worker), typeof(GuestAccount), typeof(UnknownWorker))]
     public abstract class Account : BaseEntity
     {
 
