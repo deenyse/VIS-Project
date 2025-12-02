@@ -1,0 +1,15 @@
+C:\Users\denve\Desktop\5sem\VIS\CV-3-project\ClientTerminal\bin\Debug\net9.0\ClientTerminal.exe
+C:\Users\denve\Desktop\5sem\VIS\CV-3-project\ClientTerminal\bin\Debug\net9.0\ClientTerminal.deps.json
+C:\Users\denve\Desktop\5sem\VIS\CV-3-project\ClientTerminal\bin\Debug\net9.0\ClientTerminal.runtimeconfig.json
+C:\Users\denve\Desktop\5sem\VIS\CV-3-project\ClientTerminal\bin\Debug\net9.0\ClientTerminal.dll
+C:\Users\denve\Desktop\5sem\VIS\CV-3-project\ClientTerminal\bin\Debug\net9.0\ClientTerminal.pdb
+C:\Users\denve\Desktop\5sem\VIS\CV-3-project\ClientTerminal\obj\Debug\net9.0\ClientTerminal.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\denve\Desktop\5sem\VIS\CV-3-project\ClientTerminal\obj\Debug\net9.0\ClientTerminal.AssemblyInfoInputs.cache
+C:\Users\denve\Desktop\5sem\VIS\CV-3-project\ClientTerminal\obj\Debug\net9.0\ClientTerminal.AssemblyInfo.cs
+C:\Users\denve\Desktop\5sem\VIS\CV-3-project\ClientTerminal\obj\Debug\net9.0\ClientTerminal.csproj.CoreCompileInputs.cache
+C:\Users\denve\Desktop\5sem\VIS\CV-3-project\ClientTerminal\obj\Debug\net9.0\ClientTerminal.sourcelink.json
+C:\Users\denve\Desktop\5sem\VIS\CV-3-project\ClientTerminal\obj\Debug\net9.0\ClientTerminal.dll
+C:\Users\denve\Desktop\5sem\VIS\CV-3-project\ClientTerminal\obj\Debug\net9.0\refint\ClientTerminal.dll
+C:\Users\denve\Desktop\5sem\VIS\CV-3-project\ClientTerminal\obj\Debug\net9.0\ClientTerminal.pdb
+C:\Users\denve\Desktop\5sem\VIS\CV-3-project\ClientTerminal\obj\Debug\net9.0\ClientTerminal.genruntimeconfig.cache
+C:\Users\denve\Desktop\5sem\VIS\CV-3-project\ClientTerminal\obj\Debug\net9.0\ref\ClientTerminal.dll

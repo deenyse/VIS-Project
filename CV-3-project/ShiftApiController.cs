@@ -3,9 +3,43 @@ using CV_3_project.Services;
 using EmbedIO;
 using EmbedIO.Routing;
 using EmbedIO.WebApi;
+using System.Text.Json;
 
 namespace CV_3_project
 {
+    public class LoginRequest
+    {
+        public string Login { get; set; }
+        public string Password { get; set; }
+    }
+
+    public class AssignRequest
+    {
+        public int ShiftId { get; set; }
+        public int WorkerId { get; set; }
+    }
+
+    public class CreateRequest
+    {
+        public DateTime Start { get; set; }
+        public DateTime End { get; set; }
+    }
+    public class NotificationRequest
+    {
+        public int UserId { get; set; }
+        public string Message { get; set; }
+    }
+    public class CreateAccountRequest
+    {
+        public string Type { get; set; }
+        public string Login { get; set; }
+        public string Password { get; set; }
+        public string Name { get; set; }
+        public string Surname { get; set; }
+        public string Email { get; set; }
+        public string Phone { get; set; }
+        public string? Position { get; set; }
+    }
     public class ShiftApiController : WebApiController
     {
         private readonly ShiftService _service;
@@ -15,29 +49,225 @@ namespace CV_3_project
             _service = service;
         }
 
+        [Route(HttpVerbs.Post, "/login")]
+        public async Task<object?> Login()
+        {
+            string body;
+            using (var reader = new StreamReader(HttpContext.OpenRequestStream()))
+            {
+                body = await reader.ReadToEndAsync();
+            }
+
+            //Console.WriteLine($"[DEBUG] Login JSON: {body}");
+
+            if (string.IsNullOrWhiteSpace(body)) return null;
+
+            try
+            {
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var requestData = JsonSerializer.Deserialize<LoginRequest>(body, options);
+
+                if (requestData == null || string.IsNullOrEmpty(requestData.Login)) return null;
+
+                var account = _service.Login(requestData.Login, requestData.Password);
+
+                if (account != null)
+                {
+                    return new
+                    {
+                        User = account,
+                        Role = account.GetType().Name
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                //Console.WriteLine($"[ERROR] Login Parsing failed: {ex.Message}");
+            }
+            return null;
+        }
+
         [Route(HttpVerbs.Get, "/shifts")]
         public List<Shift> GetShifts() => _service.GetAvailableShifts();
+
+        [Route(HttpVerbs.Get, "/shifts/assigned")]
+        public List<object> GetAssignedShifts()
+        {
+            var shifts = _service.GetAssignedShifts();
+            var result = new List<object>();
+            foreach (var s in shifts)
+            {
+                if (s.AssignedWorkerId.HasValue)
+                {
+                    var worker = _service.GetWorker(s.AssignedWorkerId.Value);
+                    result.Add(new { Shift = s, Worker = worker });
+                }
+            }
+            return result;
+        }
+
+        [Route(HttpVerbs.Get, "/shifts/worker/{workerId}")]
+        public List<Shift> GetWorkerShifts(int workerId)
+        {
+            return _service.GetAssignedShifts()
+                           .Where(s => s.AssignedWorkerId == workerId)
+                           .ToList();
+        }
 
         [Route(HttpVerbs.Post, "/shifts")]
         public async Task<bool> AddShift()
         {
-            var data = await HttpContext.GetRequestFormDataAsync();
-            if (DateTime.TryParse(data["start"], out var start) && DateTime.TryParse(data["end"], out var end))
+            string body;
+            using (var reader = new StreamReader(HttpContext.OpenRequestStream()))
             {
-                return _service.AddShift(start, end) == null;
+                body = await reader.ReadToEndAsync();
             }
-            return false;
+
+            if (string.IsNullOrWhiteSpace(body)) return false;
+
+            try
+            {
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var request = JsonSerializer.Deserialize<CreateRequest>(body, options);
+
+                if (request == null)
+                {
+                    //Console.WriteLine("[ERROR] Create JSON invalid");
+                    return false;
+                }
+
+                string? error = _service.AddShift(request.Start, request.End);
+                if (error != null)
+                {
+                    //Console.WriteLine($"[ERROR] Create failed: {error}");
+                    return false;
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                //Console.WriteLine($"[ERROR] Create Exception: {ex.Message}");
+                return false;
+            }
         }
 
         [Route(HttpVerbs.Post, "/assign")]
         public async Task<bool> AssignShift()
         {
-            var data = await HttpContext.GetRequestFormDataAsync();
-            if (int.TryParse(data["shiftId"], out var sId) && int.TryParse(data["workerId"], out var wId))
+            string body;
+            using (var reader = new StreamReader(HttpContext.OpenRequestStream()))
             {
-                return _service.AssignToShift(sId, wId) == null;
+                body = await reader.ReadToEndAsync();
             }
-            return false;
+
+            if (string.IsNullOrWhiteSpace(body)) return false;
+
+            try
+            {
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var request = JsonSerializer.Deserialize<AssignRequest>(body, options);
+
+                if (request == null || request.ShiftId == 0 || request.WorkerId == 0)
+                {
+                    //Console.WriteLine("[ERROR] Assign JSON invalid");
+                    return false;
+                }
+
+                string? error = _service.AssignToShift(request.ShiftId, request.WorkerId);
+                if (error != null)
+                {
+                    //Console.WriteLine($"[ERROR] Assign failed: {error}");
+                    return false;
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                //Console.WriteLine($"[ERROR] Assign Exception: {ex.Message}");
+                return false;
+            }
+        }
+
+        [Route(HttpVerbs.Get, "/notifications/{userId}")]
+        public List<Notification> GetNotifications(int userId)
+        {
+            return _service.GetAndClearNotifications(userId);
+        }
+
+        [Route(HttpVerbs.Post, "/notifications")]
+        public async Task<bool> SendNotification()
+        {
+            string body;
+            using (var reader = new StreamReader(HttpContext.OpenRequestStream()))
+            {
+                body = await reader.ReadToEndAsync();
+            }
+
+            if (string.IsNullOrWhiteSpace(body)) return false;
+
+            try
+            {
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var request = JsonSerializer.Deserialize<NotificationRequest>(body, options);
+
+                if (request == null || request.UserId == 0)
+                {
+                    //Console.WriteLine("[ERROR] Notification JSON invalid");
+                    return false;
+                }
+
+                _service.AddNotification(request.UserId, request.Message);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                //Console.WriteLine($"[ERROR] Notification Exception: {ex.Message}");
+                return false;
+            }
+        }
+
+        [Route(HttpVerbs.Post, "/accounts/create")]
+        public async Task<string?> CreateAccount()
+        {
+            string body;
+            using (var reader = new StreamReader(HttpContext.OpenRequestStream()))
+            {
+                body = await reader.ReadToEndAsync();
+            }
+
+            if (string.IsNullOrWhiteSpace(body)) return "Empty request body";
+
+            try
+            {
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var data = JsonSerializer.Deserialize<CreateAccountRequest>(body, options);
+
+                if (data == null) return "Invalid JSON format";
+
+                string login = data.Login ?? "";
+                string pass = data.Password ?? "";
+                string name = data.Name ?? "";
+                string sur = data.Surname ?? "";
+                string mail = data.Email ?? "";
+                string ph = data.Phone ?? "";
+                string pos = data.Position ?? "";
+
+                if (data.Type == "manager")
+                {
+                    return _service.CreateManager(login, pass, name, sur, mail, ph);
+                }
+                else if (data.Type == "worker")
+                {
+                    return _service.CreateWorker(login, pass, name, sur, mail, ph, pos);
+                }
+
+                return "Invalid account type";
+            }
+            catch (Exception ex)
+            {
+                //Console.WriteLine($"[ERROR] Create Account Exception: {ex.Message}");
+                return $"Server Error: {ex.Message}";
+            }
         }
     }
 }

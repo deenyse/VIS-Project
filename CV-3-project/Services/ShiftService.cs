@@ -1,6 +1,7 @@
 ﻿using CV_3_project.EventSystem;
 using CV_3_project.Models;
 using CV_3_project.Observers;
+using CV_3_project.Security;
 
 namespace CV_3_project.Services
 {
@@ -16,7 +17,6 @@ namespace CV_3_project.Services
             _accountFactory = new AccountFactory();
             _eventManager = new EventManager();
 
-            // Подключаем уведомления
             _eventManager.Register(new WorkerNotifier(_unitOfWork));
             _eventManager.Register(new ManagerNotifier(_unitOfWork));
         }
@@ -96,6 +96,89 @@ namespace CV_3_project.Services
                 return null;
             }
             catch (Exception ex) { return ex.Message; }
+        }
+
+        public Account? Login(string login, string password)
+        {
+            //Console.WriteLine($"[DEBUG] Attempting login for: {login}");
+            var account = _unitOfWork.Accounts.GetByLogin(login);
+            if (account != null)
+            {
+                //Console.WriteLine($"[DEBUG] Account found: {account.Login}");
+                if (SecurityHelper.VerifyPassword(password, account.PasswordHash, account.PasswordSalt))
+                {
+                    //Console.WriteLine("[DEBUG] Password verified.");
+                    return account;
+                }
+                else
+                {
+                    //Console.WriteLine("[DEBUG] Password verification failed.");
+                }
+            }
+            else
+            {
+                //Console.WriteLine("[DEBUG] Account not found.");
+            }
+            return null;
+        }
+
+        public List<Notification> GetAndClearNotifications(int userId)
+        {
+            var notifications = _unitOfWork.Notifications.GetByUserId(userId);
+            if (notifications.Any())
+            {
+                _unitOfWork.Notifications.DeleteByUserId(userId);
+                _unitOfWork.SaveChanges();
+            }
+            return notifications;
+        }
+
+        public void AddNotification(int userId, string message)
+        {
+            var notification = new Notification(userId, message);
+            notification.Validate();
+            if (notification.IsValid)
+            {
+                _unitOfWork.Notifications.Add(notification);
+                _unitOfWork.SaveChanges();
+            }
+        }
+
+        public List<Shift> GetAssignedShifts()
+        {
+            return _unitOfWork.Shifts.GetAll().Where(s => s.AssignedWorkerId != null).ToList();
+        }
+
+        public Account? GetWorker(int id)
+        {
+            return _unitOfWork.Accounts.GetById(id);
+        }
+
+        public string? CreateManager(string login, string password, string name, string surname, string email, string phone)
+        {
+            var args = new AccountCreationArgs
+            {
+                Login = login,
+                Password = password,
+                Name = name,
+                Surname = surname,
+                Contacts = new ContactInfo(email, phone)
+            };
+            return CreateAccount(AccountType.Manager, args);
+        }
+
+        public string? CreateWorker(string login, string password, string name, string surname, string email, string phone, string position)
+        {
+            var args = new AccountCreationArgs
+            {
+                Login = login,
+                Password = password,
+                Name = name,
+                Surname = surname,
+                Contacts = new ContactInfo(email, phone),
+                Position = position
+            };
+            return CreateAccount(AccountType.Worker, args);
         }
 
         public List<Shift> GetAvailableShifts() =>

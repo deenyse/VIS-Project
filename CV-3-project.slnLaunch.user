@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "CV-3-project\\CV-3-project.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "ClientTerminal\\ClientTerminal.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

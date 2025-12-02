@@ -1,237 +1,66 @@
-﻿using CV_3_project.Models;
-using CV_3_project.Observers;
+﻿using CV_3_project.Observers;
 using CV_3_project.Services;
 using EmbedIO;
-using Swan.Logging;
+
 namespace CV_3_project
 {
     internal class Program
     {
-        // ВАЖНО: Main теперь async Task
         static async Task Main(string[] args)
         {
-            // Отключаем консоль
-            Logger.UnregisterLogger<ConsoleLogger>();
-            // Включаем запись в файл
-            Logger.RegisterLogger(new FileLogger("server_log.txt", true));
-
-            IUnitOfWork unitOfWork = new MongoUnitOfWork();
-
-            // --- ЗАПУСК ВЕБ-ЧАСТИ ---
-            var shiftService = new ShiftService(unitOfWork);
-            shiftService.EnsureRootAdminExists(); // Создаем админа для веба и консоли
-
-            var url = "http://localhost:9696/";
-            // Запускаем сервер в отдельном потоке, чтобы не блокировать консоль
-            var serverTask = Task.Run(() => StartWebServer(url, shiftService));
-
-            Console.WriteLine("--------------------------------------------------");
-            Console.WriteLine($"[WEB] Web Interface running at: {url}");
-            Console.WriteLine("--------------------------------------------------");
-
-
-            // --- ЗАПУСК КОНСОЛЬНОЙ ЧАСТИ (Ваш старый код) ---
-            Application app = new Application(unitOfWork);
-            app.RegisterObserver(new WorkerNotifier(unitOfWork));
-            app.RegisterObserver(new ManagerNotifier(unitOfWork));
-
-            while (true)
+            try
             {
-                string choice = "0";
-                Console.WriteLine("\n--- Shift Management System (Console) ---");
+                IUnitOfWork unitOfWork = new MongoUnitOfWork();
 
-                if (app.signedInUser is GuestAccount)
-                {
-                    Console.WriteLine("Logged in as: Guest! Please provide credentials to sing in.");
-                    Login(app); // Сразу просим логин, как в оригинале
-                }
-                else
-                {
-                    Console.WriteLine($"Logged in as: {app.signedInUser.Name} {app.signedInUser.Surname} (ID: {app.signedInUser.Id})");
-                    if (app.IsAppManager())
-                    {
-                        Console.WriteLine("1. Create Manager Account");
-                        Console.WriteLine("2. Create Worker Account");
-                        Console.WriteLine("3. Logout");
-                    }
-                    else if (app.IsManager())
-                    {
-                        Console.WriteLine("1. Add Shift");
-                        Console.WriteLine("2. View Assigned Shifts");
-                        Console.WriteLine("3. Send Notification to Worker");
-                        Console.WriteLine("4. Logout");
-                    }
-                    else // Worker
-                    {
-                        Console.WriteLine("1. View Available Shifts");
-                        Console.WriteLine("2. Assign to Shift");
-                        Console.WriteLine("3. Logout");
-                    }
-                    choice = Console.ReadLine();
+                var shiftService = new ShiftService(unitOfWork);
+                shiftService.EnsureRootAdminExists();
 
-                    // Обработка выбора
-                    if (app.IsAppManager())
-                    {
-                        switch (choice)
-                        {
-                            case "1": CreateAccount(app, isManager: true); break;
-                            case "2": CreateAccount(app, isManager: false); break;
-                            case "3": Logout(app); break;
-                        }
-                    }
-                    else if (app.IsManager())
-                    {
-                        switch (choice)
-                        {
-                            case "1": AddShift(app); break;
-                            case "2": ViewAssignedShifts(app); break;
-                            case "3": SendNotification(app); break;
-                            case "4": Logout(app); break;
-                        }
-                    }
-                    else if (app.signedInUser is Worker)
-                    {
-                        switch (choice)
-                        {
-                            case "1": ViewAvailableShifts(app); break;
-                            case "2": AssignToShift(app); break;
-                            case "3": Logout(app); break;
-                        }
-                    }
-                }
+                var url = "http://localhost:9696/";
+
+                var serverTask = Task.Run(() => StartWebServer(url, shiftService));
+
+                Console.WriteLine("--------------------------------------------------");
+                Console.WriteLine($"[WEB] Web Interface running at: {url}");
+                Console.WriteLine("--------------------------------------------------");
+
+                Application app = new Application(unitOfWork);
+                app.RegisterObserver(new WorkerNotifier(unitOfWork));
+                app.RegisterObserver(new ManagerNotifier(unitOfWork));
+
+                Console.WriteLine("Server is running. Press enter to close");
+                Console.ReadLine();
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"Erorr: {ex.Message}");
+                Console.WriteLine(ex.StackTrace);
+                Console.ResetColor();
+
+                Console.WriteLine("\nPress Enter to close window");
+                Console.ReadLine();
             }
         }
 
         private static void StartWebServer(string url, ShiftService service)
         {
-            using (var server = new WebServer(o => o
+            try
+            {
+                using (var server = new WebServer(o => o
                     .WithUrlPrefix(url)
                     .WithMode(HttpListenerMode.EmbedIO)))
-            {
-                server
-                    .WithWebApi("/api", m => m.RegisterController(() => new ShiftApiController(service)))
-                    .WithStaticFolder("/", "html", true);
-
-                server.RunAsync().Wait();
-            }
-        }
-
-        // --- ВАШИ ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ---
-        private static void Login(Application app)
-        {
-            Console.Write("Enter login: ");
-            string login = Console.ReadLine();
-            Console.Write("Enter password: ");
-            string password = Console.ReadLine();
-
-            if (app.Login(login, password))
-            {
-                Console.WriteLine("✅ Login successful");
-                CheckNotifications(app);
-            }
-            else Console.WriteLine("Login failed");
-        }
-
-        private static void CheckNotifications(Application app)
-        {
-            Console.WriteLine("\n--- Checking for notifications ---");
-            var notifications = app.GetAndClearUserNotifications(app.signedInUser.Id);
-            if (!notifications.Any()) Console.WriteLine("No Notifications.");
-            else
-            {
-                Console.WriteLine($"You have {notifications.Count} new notification(s):");
-                foreach (var n in notifications) Console.WriteLine($"[{n.CreatedAt:g}] {n.Message}");
-            }
-            Console.WriteLine("--- End of notifications ---\n");
-        }
-
-        private static void Logout(Application app)
-        {
-            app.Logout();
-            Console.WriteLine("Logged out");
-        }
-
-        private static void AddShift(Application app)
-        {
-            try
-            {
-                Console.Write("Enter start (yyyy-MM-dd HH:mm): ");
-                DateTime startTime = DateTime.Parse(Console.ReadLine());
-                Console.Write("Enter end (yyyy-MM-dd HH:mm): ");
-                DateTime endTime = DateTime.Parse(Console.ReadLine());
-
-                if (app.AddShift(startTime, endTime)) Console.WriteLine("Shift added.");
-                else Console.WriteLine("Failed to add shift.");
-            }
-            catch { Console.WriteLine("Invalid date format."); }
-        }
-
-        private static void ViewAssignedShifts(Application app)
-        {
-            var assignedShifts = app.GetAssignedShiftsWithWorker();
-            Console.WriteLine("--- Assigned Shifts ---");
-            foreach (var (shift, worker) in assignedShifts)
-            {
-                Console.WriteLine($"ID: {shift.Id}, Period: {shift.Period}, Worker: {worker.Name} {worker.Surname}");
-            }
-        }
-
-        private static void ViewAvailableShifts(Application app)
-        {
-            var availableShifts = app.GetAvailableShifts();
-            Console.WriteLine("--- Available Shifts ---");
-            foreach (var shift in availableShifts)
-            {
-                Console.WriteLine($"ID: {shift.Id}, Period: {shift.Period}");
-            }
-        }
-
-        private static void AssignToShift(Application app)
-        {
-            Console.Write("Enter Shift ID: ");
-            if (int.TryParse(Console.ReadLine(), out int id))
-            {
-                if (app.AssignToShift(id)) Console.WriteLine("Assigned.");
-                else Console.WriteLine("Failed (conflict or taken).");
-            }
-        }
-
-        private static void SendNotification(Application app)
-        {
-            Console.Write("Worker ID: ");
-            if (int.TryParse(Console.ReadLine(), out int id))
-            {
-                Console.Write("Message: ");
-                string msg = Console.ReadLine();
-                app.AddNotification(id, msg);
-                Console.WriteLine("Sent.");
-            }
-        }
-
-        private static void CreateAccount(Application app, bool isManager)
-        {
-            try
-            {
-                Console.Write("Login: "); string login = Console.ReadLine();
-                Console.Write("Password: "); string pass = Console.ReadLine();
-                Console.Write("Name: "); string name = Console.ReadLine();
-                Console.Write("Surname: "); string sur = Console.ReadLine();
-                Console.Write("Email: "); string email = Console.ReadLine();
-                Console.Write("Phone: "); string phone = Console.ReadLine();
-                var contact = new ContactInfo(email, phone);
-
-                bool success;
-                if (isManager) success = app.AddManager(login, pass, name, sur, contact);
-                else
                 {
-                    Console.Write("Position: "); string pos = Console.ReadLine();
-                    success = app.AddWorker(login, pass, name, sur, contact, pos);
-                }
+                    server
+                        .WithWebApi("/api", m => m.RegisterController(() => new ShiftApiController(service)))
+                        .WithStaticFolder("/", "html", true);
 
-                if (success) Console.WriteLine("✅ Account created.");
-                else Console.WriteLine("⚠️ Failed.");
+                    server.RunAsync().Wait();
+                }
             }
-            catch (Exception ex) { Console.WriteLine($"Error: {ex.Message}"); }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Web Server Error]: {ex.Message}");
+            }
         }
     }
 }
