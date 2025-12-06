@@ -202,6 +202,7 @@ namespace ClientTerminal
             catch { return false; }
         }
 
+        //WORKS
         public bool AssignToShift(int shiftId)
         {
             try
