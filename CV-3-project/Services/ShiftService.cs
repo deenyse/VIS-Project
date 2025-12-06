@@ -150,12 +150,12 @@ namespace CV_3_project.Services
             return notifications;
         }
 
-        public void AddNotification(int userId, string message)
+        public void AddNotification(int userId, int toId, string message)
         {
             try
             {
                 Authorize(userId, typeof(Manager));
-                var notification = new Notification(userId, message);
+                var notification = new Notification(toId, message);
                 notification.Validate();
                 if (notification.IsValid)
                 {

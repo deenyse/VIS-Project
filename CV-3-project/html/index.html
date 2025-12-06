@@ -518,8 +518,8 @@
                     },
                     async sendNotification() {
                         const payload = {
-                            workerId: this.user.Id,
-                            userId: this.notif.userId,
+                            workerId: Number(this.user.Id),
+                            userId: Number(this.notif.userId),
                             message: this.notif.message,
                         };
 
@@ -541,12 +541,16 @@
                     },
                     async createAccount() {
                         try {
+                            const payload = {
+                                ...this.newAccount,
+                                workerId: this.user.Id,
+                            };
                             const res = await fetch("/api/accounts/create", {
                                 method: "POST",
                                 headers: {
                                     "Content-Type": "application/json",
                                 },
-                                body: JSON.stringify(this.newAccount),
+                                body: JSON.stringify(payload),
                             });
 
                             const txt = await res.text();

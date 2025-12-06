@@ -208,16 +208,16 @@ namespace CV_3_project
 
                 if (request == null || request.UserId == 0)
                 {
-                    //Console.WriteLine("[ERROR] Notification JSON invalid");
+                    Console.WriteLine("[ERROR] Notification JSON invalid");
                     return false;
                 }
 
-                _service.AddNotification(request.UserId, request.Message);
+                _service.AddNotification(request.WorkerId, request.UserId, request.Message);
                 return true;
             }
             catch (Exception ex)
             {
-                //Console.WriteLine($"[ERROR] Notification Exception: {ex.Message}");
+                Console.WriteLine($"[ERROR] Notification Exception: {ex.Message}");
                 return false;
             }
         }

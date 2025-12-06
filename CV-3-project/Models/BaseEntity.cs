@@ -10,7 +10,7 @@ namespace CV_3_project.Models
         public DateTime UpdatedAt { get; private set; }
 
         [BsonIgnore] // Don't save errors to the DB
-        public List<string> ValidationErrors { get; private set; } = new List<string>();
+        public List<string> ValidationErrors { get; private set; } = new();
 
         [BsonIgnore]
         public bool IsValid => ValidationErrors.Count == 0;
@@ -30,5 +30,6 @@ namespace CV_3_project.Models
         {
             ValidationErrors.Clear();
         }
+
     }
 }
