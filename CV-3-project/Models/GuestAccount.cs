@@ -8,12 +8,10 @@ namespace CV_3_project.Models
         public GuestAccount()
             : base("guest", "Guest", "", new ContactInfo("", ""))
         {
-            // Guest account is always valid in the system context
         }
 
         public override void Validate()
         {
-            // Guest does not require validation
             ValidationErrors.Clear();
         }
     }

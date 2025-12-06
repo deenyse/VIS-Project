@@ -6,7 +6,7 @@ namespace CV_3_project
     {
         IAccountRepository Accounts { get; }
         IShiftRepository Shifts { get; }
-        INotificationRepository Notifications { get; } // <-- Mod: Added repository
+        INotificationRepository Notifications { get; }
         void SaveChanges();
     }
 }

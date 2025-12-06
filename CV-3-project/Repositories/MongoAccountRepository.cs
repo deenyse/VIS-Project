@@ -6,15 +6,14 @@ namespace CV_3_project.Repositories
     public class MongoAccountRepository : IAccountRepository
     {
         private readonly IMongoCollection<Account> _accounts;
-        private readonly IMongoCollection<Counter> _counters; // Добавляем коллекцию счетчиков
+        private readonly IMongoCollection<Counter> _counters;
 
         public MongoAccountRepository(IMongoDatabase database)
         {
             _accounts = database.GetCollection<Account>("accounts");
-            _counters = database.GetCollection<Counter>("counters"); // Получаем доступ к коллекции счетчиков
+            _counters = database.GetCollection<Counter>("counters");
         }
 
-        // Безопасный метод для получения следующего ID
         private int GetNextSequenceValue(string sequenceName)
         {
             var filter = Builders<Counter>.Filter.Eq(c => c.Id, sequenceName);
@@ -36,10 +35,8 @@ namespace CV_3_project.Repositories
                 throw new System.Exception("Account with this login already exists.");
             }
 
-            // 1. Получаем новый уникальный ID из счетчика
             account.Id = GetNextSequenceValue("accountId");
 
-            // 2. Вставляем аккаунт с уже присвоенным ручным ID
             _accounts.InsertOne(account);
         }
 

@@ -4,12 +4,10 @@ namespace CV_3_project.Models
 {
     [BsonDiscriminator(Required = true, RootClass = true)]
     [BsonKnownTypes(typeof(Manager), typeof(Worker), typeof(GuestAccount), typeof(UnknownWorker), typeof(AppManager))]
-    //[BsonKnownTypes(typeof(Manager), typeof(Worker), typeof(GuestAccount), typeof(UnknownWorker))]
     public abstract class Account : BaseEntity
     {
 
         public string Login { get; set; }
-        //public string Password { get; set; }
         public string PasswordHash { get; set; }
         public byte[] PasswordSalt { get; set; }
         public string Name { get; set; }
@@ -33,7 +31,7 @@ namespace CV_3_project.Models
         }
         public override void Validate()
         {
-            base.Validate(); // Clears the list
+            base.Validate();
             if (string.IsNullOrWhiteSpace(Login))
                 ValidationErrors.Add("Login is required.");
 

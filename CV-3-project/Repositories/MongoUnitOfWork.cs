@@ -9,7 +9,7 @@ namespace CV_3_project
 
         public IAccountRepository Accounts { get; }
         public IShiftRepository Shifts { get; }
-        public INotificationRepository Notifications { get; } // <-- Mod: Added property
+        public INotificationRepository Notifications { get; }
 
         public MongoUnitOfWork()
         {
@@ -21,7 +21,7 @@ namespace CV_3_project
 
             Accounts = new MongoAccountRepository(_database);
             Shifts = new MongoShiftRepository(_database);
-            Notifications = new MongoNotificationRepository(_database); // <-- Mod: Initialization
+            Notifications = new MongoNotificationRepository(_database);
         }
 
         public void SaveChanges()

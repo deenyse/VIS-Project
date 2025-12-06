@@ -5,7 +5,6 @@
         public int UserId { get; set; } // Recipient's ID
         public string Message { get; set; }
 
-        // Constructor for simplicity
         public Notification(int userId, string message)
         {
             UserId = userId;
