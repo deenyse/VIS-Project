@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ClientTerminal")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5efb2aa29d8a910487a9102bbeabf61bd9d8ef9a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+51b07910e677866381371e075901835d276401f3")]
 [assembly: System.Reflection.AssemblyProductAttribute("ClientTerminal")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ClientTerminal")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

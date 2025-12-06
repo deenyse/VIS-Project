@@ -28,8 +28,8 @@ namespace CV_3_project.Models
 
         public void SetPassword(string password)
         {
-            PasswordSalt = Security.SecurityHelper.GenerateSalt();
-            PasswordHash = Security.SecurityHelper.HashPassword(password, PasswordSalt);
+            PasswordSalt = Services.SecurityHelper.GenerateSalt();
+            PasswordHash = Services.SecurityHelper.HashPassword(password, PasswordSalt);
         }
         public override void Validate()
         {

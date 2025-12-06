@@ -1,7 +1,6 @@
 ﻿using CV_3_project.EventSystem;
 using CV_3_project.Models;
 using CV_3_project.Observers;
-using CV_3_project.Security;
 
 namespace CV_3_project.Services
 {
