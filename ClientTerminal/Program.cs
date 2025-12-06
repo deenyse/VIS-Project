@@ -159,6 +159,7 @@ namespace ClientTerminal
             return new List<Shift>();
         }
 
+        //ADD FUNCTIONALITY
         public List<(Shift, Worker)> GetAssignedShiftsWithWorker()
         {
             try
@@ -246,14 +247,33 @@ namespace ClientTerminal
         {
             try
             {
-                var payload = new { WorkerId = targetWorkerId, UserId = signedInUser.Id, Message = message };
+                var payload = new
+                {
+
+                    WorkerId = signedInUser.Id,
+                    UserId = targetWorkerId,
+                    Message = message
+                };
 
                 string json = JsonSerializer.Serialize(payload);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                _client.PostAsync($"{BaseUrl}/api/notifications/send", content).Wait();
+                var response = _client.PostAsync($"{BaseUrl}/api/notifications/send", content).Result;
+
+                if (response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine("Notification sent successfully.");
+                }
+                else
+                {
+                    string serverError = response.Content.ReadAsStringAsync().Result;
+                    Console.WriteLine($"Error during notification sending (Code {response.StatusCode}): {serverError}");
+                }
             }
-            catch { Console.WriteLine("Ошибка отправки уведомления"); }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"AddNotification Error: {ex.Message}");
+            }
         }
 
         public bool AddManager(string login, string pass, string name, string sur, ContactInfo contact)
