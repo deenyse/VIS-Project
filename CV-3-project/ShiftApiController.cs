@@ -91,13 +91,15 @@ namespace CV_3_project
             return null;
         }
 
-        [Route(HttpVerbs.Get, "/shifts")]
+        [Route(HttpVerbs.Get, "/shifts/available")]
         public List<Shift> GetShifts() => _service.GetAvailableShifts();
 
         [Route(HttpVerbs.Get, "/shifts/assigned")]
-        public List<Shift> GetAssignedShifts()
+        public List<AssignedShiftDto> GetAssignedShifts()
         {
-            return _service.GetAvailableShifts();
+            var shifts = _service.GetAssignedShifts();
+
+            return _service.GetAssignedShiftsWithWorkers();
         }
 
         [Route(HttpVerbs.Get, "/shifts/worker/{workerId}")]

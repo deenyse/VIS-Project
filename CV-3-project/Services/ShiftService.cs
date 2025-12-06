@@ -165,14 +165,24 @@ namespace CV_3_project.Services
             }
             catch (Exception ex) { Console.WriteLine(ex.Message); }
         }
-        public List<Shift> GetAssignedShifts()
-        {
-            return _unitOfWork.Shifts.GetAll().Where(s => s.AssignedWorkerId != null).ToList();
-        }
+
+        public List<Shift> GetAssignedShifts() =>
+            _unitOfWork.Shifts.GetAll().Where(s => s.AssignedWorkerId != null).ToList();
+
 
         public List<Shift> GetAvailableShifts() =>
            _unitOfWork.Shifts.GetAll().Where(s => s.AssignedWorkerId == null).ToList();
 
+        public List<AssignedShiftDto> GetAssignedShiftsWithWorkers()
+        {
+            var shifts = GetAssignedShifts();
+
+            return shifts.Select(s => new AssignedShiftDto
+            {
+                Shift = s,
+                Worker = GetAccountById(s.AssignedWorkerId!.Value)
+            }).ToList();
+        }
 
         public string? CreateManager(int userId, string login, string password, string name, string surname, string email, string phone)
         {

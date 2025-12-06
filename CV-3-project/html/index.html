@@ -1,331 +1,568 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shift Manager</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f0f2f5;
-            font-family: 'Segoe UI', sans-serif;
-        }
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Shift Manager</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <style>
+            body {
+                background-color: #f0f2f5;
+                font-family: "Segoe UI", sans-serif;
+            }
 
-        .main-card {
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            background: white;
-        }
+            .main-card {
+                border: none;
+                border-radius: 12px;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+                background: white;
+            }
 
-        .header {
-            background: white;
-            padding: 1rem 0;
-            margin-bottom: 2rem;
-            border-bottom: 1px solid #e9ecef;
-        }
+            .header {
+                background: white;
+                padding: 1rem 0;
+                margin-bottom: 2rem;
+                border-bottom: 1px solid #e9ecef;
+            }
 
-        .login-container {
-            max-width: 400px;
-            margin: 80px auto;
-        }
+            .login-container {
+                max-width: 400px;
+                margin: 80px auto;
+            }
 
-        .badge-role {
-            font-size: 0.8em;
-            padding: 5px 10px;
-            border-radius: 20px;
-            background-color: #e9ecef;
-            color: #495057;
-        }
-    </style>
-</head>
-<body>
-    <div id="app">
-        <div v-if="!user" class="login-container">
-            <div class="card main-card p-5">
-                <div class="text-center mb-4">
-                    <h3 class="fw-bold text-primary">ShiftManager</h3>
+            .badge-role {
+                font-size: 0.8em;
+                padding: 5px 10px;
+                border-radius: 20px;
+                background-color: #e9ecef;
+                color: #495057;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="app">
+            <div v-if="!user" class="login-container">
+                <div class="card main-card p-5">
+                    <div class="text-center mb-4">
+                        <h3 class="fw-bold text-primary">ShiftManager</h3>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Login</label>
+                        <input
+                            v-model="loginData.login"
+                            class="form-control form-control-lg"
+                        />
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label text-muted small"
+                            >Password</label
+                        >
+                        <input
+                            type="password"
+                            v-model="loginData.password"
+                            class="form-control form-control-lg"
+                        />
+                    </div>
+                    <button @click="login" class="btn btn-primary w-100 btn-lg">
+                        Sign In
+                    </button>
+                    <p
+                        v-if="loginError"
+                        class="text-danger mt-3 text-center small"
+                    >
+                        {{ loginError }}
+                    </p>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label text-muted small">Login</label>
-                    <input v-model="loginData.login" class="form-control form-control-lg">
-                </div>
-                <div class="mb-4">
-                    <label class="form-label text-muted small">Password</label>
-                    <input type="password" v-model="loginData.password" class="form-control form-control-lg">
-                </div>
-                <button @click="login" class="btn btn-primary w-100 btn-lg">Sign In</button>
-                <p v-if="loginError" class="text-danger mt-3 text-center small">{{ loginError }}</p>
             </div>
-        </div>
 
-        <div v-else>
-            <div class="header">
-                <div class="container d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <h4 class="fw-bold text-primary m-0 me-4">ShiftManager</h4>
-                        <span class="badge-role">{{ userRole }}</span>
-                    </div>
-                    <div class="d-flex align-items-center">
-                        <div class="text-end me-3 d-none d-sm-block">
-                            <div class="fw-bold">{{ user.Name }} {{ user.Surname }}</div>
+            <div v-else>
+                <div class="header">
+                    <div
+                        class="container d-flex justify-content-between align-items-center"
+                    >
+                        <div class="d-flex align-items-center">
+                            <h4 class="fw-bold text-primary m-0 me-4">
+                                ShiftManager
+                            </h4>
+                            <span class="badge-role">{{ userRole }}</span>
                         </div>
-                        <button @click="logout" class="btn btn-outline-danger btn-sm">Logout</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="container">
-
-                <div v-if="notifications.length > 0" class="mb-4">
-                    <div class="alert alert-info border-0 shadow-sm">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="mb-0 fw-bold">🔔 New Notifications</h6>
-                            <button @click="clearNotifications" class="btn btn-sm btn-light text-primary">Dismiss</button>
-                        </div>
-                        <ul class="mb-0 ps-3">
-                            <li v-for="n in notifications" :key="n.CreatedAt" class="mb-1">
-                                {{ n.Message }} <span class="text-muted small ms-2">{{ formatTime(n.CreatedAt) }}</span>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div v-if="userRole === 'Manager'" class="row">
-                    <div class="col-md-4 mb-4">
-                        <div class="card main-card p-4 mb-4">
-                            <h5 class="mb-3 text-primary">➕ Add Shift</h5>
-                            <div class="mb-2"><label class="small text-muted">Start</label><input type="datetime-local" v-model="newShift.start" class="form-control"></div>
-                            <div class="mb-3"><label class="small text-muted">End</label><input type="datetime-local" v-model="newShift.end" class="form-control"></div>
-                            <button @click="createShift" class="btn btn-primary w-100">Create</button>
-                        </div>
-                        <div class="card main-card p-4">
-                            <h5 class="mb-3">Notify Worker</h5>
-                            <input v-model="notif.userId" placeholder="Worker ID" class="form-control mb-2">
-                            <textarea v-model="notif.message" placeholder="Message..." class="form-control mb-2"></textarea>
-                            <button @click="sendNotification" class="btn btn-warning w-100 text-white">Send</button>
-                        </div>
-                    </div>
-
-                    <div class="col-md-8">
-                        <div class="card main-card p-4">
-                            <div class="d-flex justify-content-between mb-3">
-                                <h5>Assigned Shifts</h5>
-                                <button @click="loadAssignedShifts" class="btn btn-sm btn-outline-secondary">Refresh</button>
-                            </div>
-                            <div class="list-group">
-                                <div v-for="item in assignedShifts" class="list-group-item">
-                                    <div class="fw-bold">#{{ item.Shift.Id }} | {{ formatTime(item.Shift.Period.StartTime) }} - {{ formatTime(item.Shift.Period.EndTime) }}</div>
-                                    <div class="text-muted small">Worker: {{ item.Worker.Name }} {{ item.Worker.Surname }}</div>
+                        <div class="d-flex align-items-center">
+                            <div class="text-end me-3 d-none d-sm-block">
+                                <div class="fw-bold">
+                                    {{ user.Name }} {{ user.Surname }}
                                 </div>
                             </div>
+                            <button
+                                @click="logout"
+                                class="btn btn-outline-danger btn-sm"
+                            >
+                                Logout
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <div v-if="userRole === 'Worker'" class="row">
-                    <div class="col-md-6 mb-4">
-                        <div class="card main-card p-4 h-100 border-top border-primary border-4">
-                            <div class="d-flex justify-content-between mb-3">
-                                <h5 class="text-primary">📅 My Schedule</h5>
-                                <button @click="loadMyShifts" class="btn btn-sm btn-outline-primary">Refresh</button>
+                <div class="container">
+                    <div v-if="notifications.length > 0" class="mb-4">
+                        <div class="alert alert-info border-0 shadow-sm">
+                            <div
+                                class="d-flex justify-content-between align-items-center mb-2"
+                            >
+                                <h6 class="mb-0 fw-bold">
+                                    🔔 New Notifications
+                                </h6>
+                                <button
+                                    @click="clearNotifications"
+                                    class="btn btn-sm btn-light text-primary"
+                                >
+                                    Dismiss
+                                </button>
                             </div>
-                            <ul class="list-group list-group-flush">
-                                <li v-if="myShifts.length === 0" class="list-group-item text-muted">No shifts.</li>
-                                <li v-for="shift in myShifts" class="list-group-item">
-                                    <span class="badge bg-success me-2">Active</span>
-                                    {{ formatTime(shift.Period.StartTime) }} - {{ formatTime(shift.Period.EndTime) }}
+                            <ul class="mb-0 ps-3">
+                                <li
+                                    v-for="n in notifications"
+                                    :key="n.CreatedAt"
+                                    class="mb-1"
+                                >
+                                    {{ n.Message }}
+                                    <span class="text-muted small ms-2"
+                                        >{{ formatTime(n.CreatedAt) }}</span
+                                    >
                                 </li>
                             </ul>
                         </div>
                     </div>
 
-                    <div class="col-md-6 mb-4">
-                        <div class="card main-card p-4 h-100">
-                            <div class="d-flex justify-content-between mb-3">
-                                <h5>Available Shifts</h5>
-                                <button @click="loadShifts" class="btn btn-sm btn-outline-secondary">Refresh</button>
+                    <div v-if="userRole === 'Manager'" class="row">
+                        <div class="col-md-4 mb-4">
+                            <div class="card main-card p-4 mb-4">
+                                <h5 class="mb-3 text-primary">➕ Add Shift</h5>
+                                <div class="mb-2">
+                                    <label class="small text-muted">Start</label
+                                    ><input
+                                        type="datetime-local"
+                                        v-model="newShift.start"
+                                        class="form-control"
+                                    />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="small text-muted">End</label
+                                    ><input
+                                        type="datetime-local"
+                                        v-model="newShift.end"
+                                        class="form-control"
+                                    />
+                                </div>
+                                <button
+                                    @click="createShift"
+                                    class="btn btn-primary w-100"
+                                >
+                                    Create
+                                </button>
                             </div>
-                            <div class="list-group">
-                                <div v-if="shifts.length === 0" class="text-center text-muted p-3">No available shifts.</div>
-                                <div v-for="shift in shifts" :key="shift.Id" class="list-group-item d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <span class="badge bg-light text-dark border me-2">#{{ shift.Id }}</span>
-                                        {{ formatTime(shift.Period.StartTime) }} <br>
-                                        <small class="text-muted">to {{ formatTime(shift.Period.EndTime) }}</small>
+                            <div class="card main-card p-4">
+                                <h5 class="mb-3">Notify Worker</h5>
+                                <input
+                                    v-model="notif.userId"
+                                    placeholder="Worker ID"
+                                    class="form-control mb-2"
+                                />
+                                <textarea
+                                    v-model="notif.message"
+                                    placeholder="Message..."
+                                    class="form-control mb-2"
+                                ></textarea>
+                                <button
+                                    @click="sendNotification"
+                                    class="btn btn-warning w-100 text-white"
+                                >
+                                    Send
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="col-md-8">
+                            <div class="card main-card p-4">
+                                <div
+                                    class="d-flex justify-content-between mb-3"
+                                >
+                                    <h5>Assigned Shifts</h5>
+                                    <button
+                                        @click="loadAssignedShifts"
+                                        class="btn btn-sm btn-outline-secondary"
+                                    >
+                                        Refresh
+                                    </button>
+                                </div>
+                                <div class="list-group">
+                                    <div
+                                        v-for="item in assignedShifts"
+                                        :key="item.Shift.Id"
+                                        class="list-group-item"
+                                    >
+                                        <div class="fw-bold">
+                                            {{
+                                            formatTime(item.Shift.Period.StartTime)
+                                            }} - {{
+                                            formatTime(item.Shift.Period.EndTime)
+                                            }}
+                                        </div>
+
+                                        <div class="text-muted small">
+                                            Worker: {{ item.Worker.Name }} {{
+                                            item.Worker.Surname }}
+                                        </div>
                                     </div>
-                                    <button @click="takeShift(shift.Id)" class="btn btn-sm btn-outline-success">Take Shift</button>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div v-if="userRole === 'AppManager'" class="row justify-content-center">
-                    <div class="col-md-6">
-                        <div class="card main-card p-4">
-                            <h5>Create Account</h5>
-                            <select v-model="newAccount.type" class="form-select mb-2"><option value="manager">Manager</option><option value="worker">Worker</option></select>
-                            <input v-model="newAccount.login" placeholder="Login" class="form-control mb-2">
-                            <input v-model="newAccount.password" placeholder="Password" class="form-control mb-2">
-                            <input v-model="newAccount.name" placeholder="Name" class="form-control mb-2">
-                            <input v-model="newAccount.surname" placeholder="Surname" class="form-control mb-2">
-                            <input v-model="newAccount.email" placeholder="Email" class="form-control mb-2">
-                            <input v-model="newAccount.phone" placeholder="Phone" class="form-control mb-2">
-                            <input v-if="newAccount.type === 'worker'" v-model="newAccount.position" placeholder="Position" class="form-control mb-2">
-                            <button @click="createAccount" class="btn btn-success w-100">Create</button>
+                    <div v-if="userRole === 'Worker'" class="row">
+                        <div class="col-md-6 mb-4">
+                            <div
+                                class="card main-card p-4 h-100 border-top border-primary border-4"
+                            >
+                                <div
+                                    class="d-flex justify-content-between mb-3"
+                                >
+                                    <h5 class="text-primary">📅 My Schedule</h5>
+                                    <button
+                                        @click="loadMyShifts"
+                                        class="btn btn-sm btn-outline-primary"
+                                    >
+                                        Refresh
+                                    </button>
+                                </div>
+                                <ul class="list-group list-group-flush">
+                                    <li
+                                        v-if="myShifts.length === 0"
+                                        class="list-group-item text-muted"
+                                    >
+                                        No shifts.
+                                    </li>
+                                    <li
+                                        v-for="shift in myShifts"
+                                        class="list-group-item"
+                                    >
+                                        <span class="badge bg-success me-2"
+                                            >Active</span
+                                        >
+                                        {{ formatTime(shift.Period.StartTime) }}
+                                        - {{ formatTime(shift.Period.EndTime) }}
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+                            <div class="card main-card p-4 h-100">
+                                <div
+                                    class="d-flex justify-content-between mb-3"
+                                >
+                                    <h5>Available Shifts</h5>
+                                    <button
+                                        @click="loadShifts"
+                                        class="btn btn-sm btn-outline-secondary"
+                                    >
+                                        Refresh
+                                    </button>
+                                </div>
+                                <div class="list-group">
+                                    <div
+                                        v-if="shifts.length === 0"
+                                        class="text-center text-muted p-3"
+                                    >
+                                        No available shifts.
+                                    </div>
+                                    <div
+                                        v-for="shift in shifts"
+                                        :key="shift.Id"
+                                        class="list-group-item d-flex justify-content-between align-items-center"
+                                    >
+                                        <div>
+                                            <span
+                                                class="badge bg-light text-dark border me-2"
+                                                >#{{ shift.Id }}</span
+                                            >
+                                            {{
+                                            formatTime(shift.Period.StartTime)
+                                            }} <br />
+                                            <small class="text-muted"
+                                                >to {{
+                                                formatTime(shift.Period.EndTime)
+                                                }}</small
+                                            >
+                                        </div>
+                                        <button
+                                            @click="takeShift(shift.Id)"
+                                            class="btn btn-sm btn-outline-success"
+                                        >
+                                            Take Shift
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div
+                        v-if="userRole === 'AppManager'"
+                        class="row justify-content-center"
+                    >
+                        <div class="col-md-6">
+                            <div class="card main-card p-4">
+                                <h5>Create Account</h5>
+                                <select
+                                    v-model="newAccount.type"
+                                    class="form-select mb-2"
+                                >
+                                    <option value="manager">Manager</option>
+                                    <option value="worker">Worker</option>
+                                </select>
+                                <input
+                                    v-model="newAccount.login"
+                                    placeholder="Login"
+                                    class="form-control mb-2"
+                                />
+                                <input
+                                    v-model="newAccount.password"
+                                    placeholder="Password"
+                                    class="form-control mb-2"
+                                />
+                                <input
+                                    v-model="newAccount.name"
+                                    placeholder="Name"
+                                    class="form-control mb-2"
+                                />
+                                <input
+                                    v-model="newAccount.surname"
+                                    placeholder="Surname"
+                                    class="form-control mb-2"
+                                />
+                                <input
+                                    v-model="newAccount.email"
+                                    placeholder="Email"
+                                    class="form-control mb-2"
+                                />
+                                <input
+                                    v-model="newAccount.phone"
+                                    placeholder="Phone"
+                                    class="form-control mb-2"
+                                />
+                                <input
+                                    v-if="newAccount.type === 'worker'"
+                                    v-model="newAccount.position"
+                                    placeholder="Position"
+                                    class="form-control mb-2"
+                                />
+                                <button
+                                    @click="createAccount"
+                                    class="btn btn-success w-100"
+                                >
+                                    Create
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
-    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
-    <script>
-        const { createApp } = Vue;
+        <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+        <script>
+            const { createApp } = Vue;
 
-        createApp({
-            data() {
-                return {
-                    user: null,
-                    loginData: { login: '', password: '' },
-                    loginError: '',
-                    notifications: [],
-                    shifts: [],
-                    myShifts: [],
-                    assignedShifts: [],
-                    newShift: { start: '', end: '' },
-                    newAccount: { type: 'worker', login: '', password: '', name: '', surname: '', email: '', phone: '', position: '' },
-                    notif: { userId: '', message: '' }
-                }
-            },
-            computed: {
-                userRole() { return this.user ? this.user.Role : null; }
-            },
-            methods: {
-                formatTime(dateStr) {
-                    if (!dateStr) return '';
-                    return new Date(dateStr).toLocaleString([], { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-                },
-                async login() {
-                    try {
-                        const res = await fetch('/api/login', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(this.loginData)
-                        });
-                        const data = await res.json();
-                        if (data) {
-                            this.user = data.User;
-                            this.user.Role = data.Role;
-                            this.loginError = '';
-                            this.checkNotifications();
-                            if (this.user.Role === 'Worker') { this.loadShifts(); this.loadMyShifts(); }
-                            if (this.user.Role === 'Manager') { this.loadAssignedShifts(); }
-                        } else { this.loginError = 'Invalid credentials'; }
-                    } catch (e) { this.loginError = 'Login failed'; }
-                },
-                logout() {
-                    this.user = null;
-                    this.loginData = { login: '', password: '' };
-                    this.notifications = [];
-                    this.myShifts = [];
-                },
-                async checkNotifications() {
-                    if (!this.user) return;
-                    const res = await fetch(`/api/notifications/${this.user.Id}`);
-                    this.notifications = await res.json();
-                },
-                clearNotifications() { this.notifications = []; },
-
-                async createShift() {
-                    const payload = {
-                        start: this.newShift.start,
-                        end: this.newShift.end
+            createApp({
+                data() {
+                    return {
+                        user: null,
+                        loginData: { login: "", password: "" },
+                        loginError: "",
+                        notifications: [],
+                        shifts: [],
+                        myShifts: [],
+                        assignedShifts: [],
+                        newShift: { start: "", end: "" },
+                        newAccount: {
+                            type: "worker",
+                            login: "",
+                            password: "",
+                            name: "",
+                            surname: "",
+                            email: "",
+                            phone: "",
+                            position: "",
+                        },
+                        notif: { userId: "", message: "" },
                     };
-                    try {
-                        const res = await fetch('/api/shifts', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                        const success = await res.json();
-                        if (success) {
-                            alert('Shift Created');
-                            this.loadShifts();
-                            this.loadMyShifts();
-                        } else alert('Failed');
-                    } catch (e) { alert('Error'); }
                 },
-
-                async takeShift(id) {
-                    const payload = { shiftId: id, workerId: this.user.Id };
-                    try {
-                        const res = await fetch('/api/assign', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                        const success = await res.json();
-                        if (success) {
-                            alert('✅ Assigned!');
-                            this.loadShifts();
-                            this.loadMyShifts();
-                        } else alert('⚠️ Failed (Conflict or Taken)');
-                    } catch (e) { alert('Error'); }
+                computed: {
+                    userRole() {
+                        return this.user ? this.user.Role : null;
+                    },
                 },
-
-                async loadShifts() { const res = await fetch('/api/shifts'); this.shifts = await res.json(); },
-                async loadMyShifts() { if (!this.user) return; const res = await fetch(`/api/shifts/worker/${this.user.Id}`); this.myShifts = await res.json(); },
-                async loadAssignedShifts() { const res = await fetch('/api/shifts/assigned'); this.assignedShifts = await res.json(); },
-                async sendNotification() {
-                    const payload = {
-                        userId: this.notif.userId,
-                        message: this.notif.message
-                    };
-
-                    try {
-                        await fetch('/api/notifications', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json' 
-                            },
-                            body: JSON.stringify(payload)
+                methods: {
+                    formatTime(dateStr) {
+                        if (!dateStr) return "";
+                        return new Date(dateStr).toLocaleString([], {
+                            month: "numeric",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
                         });
-
-                        this.notif = { userId: '', message: '' };
-                        alert('Sent');
-                    } catch (e) {
-                        console.error(e);
-                        alert('Error sending notification');
-                    }
-                },
-                async createAccount() {
-                    try {
-                        const res = await fetch('/api/accounts/create', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(this.newAccount)
-                        });
-
-                        const txt = await res.text();
-
-                        if (!txt || txt === "null") {
-                            alert('Created');
-                        } else {
-                            alert(txt);
+                    },
+                    async login() {
+                        try {
+                            const res = await fetch("/api/login", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify(this.loginData),
+                            });
+                            const data = await res.json();
+                            if (data) {
+                                this.user = data.User;
+                                this.user.Role = data.Role;
+                                this.loginError = "";
+                                this.checkNotifications();
+                                if (this.user.Role === "Worker") {
+                                    this.loadShifts();
+                                    this.loadMyShifts();
+                                }
+                                if (this.user.Role === "Manager") {
+                                    this.loadAssignedShifts();
+                                }
+                            } else {
+                                this.loginError = "Invalid credentials";
+                            }
+                        } catch (e) {
+                            this.loginError = "Login failed";
                         }
-                    } catch (e) {
-                        console.error(e);
-                        alert('Error creating account');
-                    }
-                }
-            }
-        }).mount('#app');
-    </script>
-</body>
+                    },
+                    logout() {
+                        this.user = null;
+                        this.loginData = { login: "", password: "" };
+                        this.notifications = [];
+                        this.myShifts = [];
+                    },
+                    async checkNotifications() {
+                        if (!this.user) return;
+                        const res = await fetch(
+                            `/api/notifications/${this.user.Id}`
+                        );
+                        this.notifications = await res.json();
+                    },
+                    clearNotifications() {
+                        this.notifications = [];
+                    },
+
+                    async createShift() {
+                        const payload = {
+                            workerId: this.user.Id,
+                            start: this.newShift.start,
+                            end: this.newShift.end,
+                        };
+                        try {
+                            const res = await fetch("/api/shifts", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify(payload),
+                            });
+                            const success = await res.json();
+                            if (success) {
+                                alert("Shift Created");
+                                this.loadShifts();
+                                this.loadMyShifts();
+                            } else alert("Failed");
+                        } catch (e) {
+                            alert("Error");
+                        }
+                    },
+
+                    async takeShift(id) {
+                        const payload = { shiftId: id, workerId: this.user.Id };
+                        try {
+                            const res = await fetch("/api/assign", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify(payload),
+                            });
+                            const success = await res.json();
+                            if (success) {
+                                alert("✅ Assigned!");
+                                this.loadShifts();
+                                this.loadMyShifts();
+                            } else alert("⚠️ Failed (Conflict or Taken)");
+                        } catch (e) {
+                            alert("Error");
+                        }
+                    },
+
+                    async loadShifts() {
+                        const res = await fetch("/api/shifts/available");
+                        this.shifts = await res.json();
+                    },
+                    async loadMyShifts() {
+                        if (!this.user) return;
+                        const res = await fetch(
+                            `/api/shifts/worker/${this.user.Id}`
+                        );
+                        this.myShifts = await res.json();
+                    },
+                    async loadAssignedShifts() {
+                        const res = await fetch("/api/shifts/assigned");
+                        this.assignedShifts = await res.json();
+                    },
+                    async sendNotification() {
+                        const payload = {
+                            workerId: this.user.Id,
+                            userId: this.notif.userId,
+                            message: this.notif.message,
+                        };
+
+                        try {
+                            await fetch("/api/notifications", {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify(payload),
+                            });
+
+                            this.notif = { userId: "", message: "" };
+                            alert("Sent");
+                        } catch (e) {
+                            console.error(e);
+                            alert("Error sending notification");
+                        }
+                    },
+                    async createAccount() {
+                        try {
+                            const res = await fetch("/api/accounts/create", {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify(this.newAccount),
+                            });
+
+                            const txt = await res.text();
+
+                            if (!txt || txt === "null") {
+                                alert("Created");
+                            } else {
+                                alert(txt);
+                            }
+                        } catch (e) {
+                            console.error(e);
+                            alert("Error creating account");
+                        }
+                    },
+                },
+            }).mount("#app");
+        </script>
+    </body>
 </html>
