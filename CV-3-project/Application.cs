@@ -1,271 +1,65 @@
-﻿using CV_3_project.EventSystem;
-using CV_3_project.Models;
-using CV_3_project.Observers;
+﻿using CV_3_project.Services;
+using EmbedIO;
 
 namespace CV_3_project
 {
     class Application
     {
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly AccountFactory _accountFactory;
-        private readonly EventManager _eventManager;
+        private IUnitOfWork unitOfWork;
+        private ShiftService shiftService;
 
-        public Account signedInUser { get; private set; } = new GuestAccount();
-
-        public Application(IUnitOfWork unitOfWork)
+        private string url = "http://localhost:9696/";
+        public Application()
         {
-            _unitOfWork = unitOfWork;
-            _accountFactory = new AccountFactory();
-            _eventManager = new EventManager();
-
-            EnsureRootAdminExists();
+            unitOfWork = new MongoUnitOfWork();
+            shiftService = new ShiftService(unitOfWork);
         }
 
-        public void RegisterObserver(IObserver observer)
-        {
-            _eventManager.Register(observer);
-        }
-
-        public void UnregisterObserver(IObserver observer)
-        {
-            _eventManager.Unregister(observer);
-        }
-
-        public void EnsureRootAdminExists()
-        {
-            var adminExists = _unitOfWork.Accounts.GetAll().OfType<AppManager>().Any();
-
-            if (!adminExists)
-            {
-                AccountCreationArgs args = new AccountCreationArgs
-                {
-                    Login = "admin",
-                    Password = "admin",
-                    Name = "Root",
-                    Surname = "Admin",
-                    Contacts = new ContactInfo("root.root", "0")
-                };
-
-                Console.WriteLine("Creating root admin account (admin/admin)...");
-
-                AddAccountInternal(AccountType.AppManager, args);
-
-            }
-        }
-
-        private bool AddAccountInternal(AccountType type, AccountCreationArgs args)
+        public void Run()
         {
             try
             {
-                var account = _accountFactory.CreateAccount(type, args);
+                Task.Run(() => StartWebServer());
 
-                account.Validate();
-                if (!account.IsValid)
-                {
-                    Console.WriteLine("Validation failed:");
-                    foreach (var error in account.ValidationErrors)
-                        Console.WriteLine($" - {error}");
-                    return false;
-                }
 
-                _unitOfWork.Accounts.Add(account);
-                _unitOfWork.SaveChanges();
-                return true;
+                Console.WriteLine("--------------------------------------------------");
+                Console.WriteLine($"[WEB] Web Interface running at: {url}");
+                Console.WriteLine("--------------------------------------------------");
+
+                Console.WriteLine("Server is running. Press enter to close");
+                Console.ReadLine();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error creating account: {ex.Message}");
-                return false;
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"Erorr: {ex.Message}");
+                Console.WriteLine(ex.StackTrace);
+                Console.ResetColor();
+
+                Console.WriteLine("\nPress Enter to close window");
+                Console.ReadLine();
             }
         }
 
-        public bool AddManager(string login, string password, string name, string surname, ContactInfo contacts)
-        {
-            Authorize(typeof(AppManager));
-            var args = new AccountCreationArgs
-            {
-                Login = login,
-                Password = password,
-                Name = name,
-                Surname = surname,
-                Contacts = contacts
-            };
-            return AddAccountInternal(AccountType.Manager, args);
-        }
-
-        public bool AddWorker(string login, string password, string name, string surname, ContactInfo contacts, string position)
-        {
-            Authorize(typeof(AppManager));
-            var args = new AccountCreationArgs
-            {
-                Login = login,
-                Password = password,
-                Name = name,
-                Surname = surname,
-                Contacts = contacts,
-                Position = position
-            };
-            return AddAccountInternal(AccountType.Worker, args);
-        }
-
-        public bool AddShift(DateTime startTime, DateTime endTime)
+        private void StartWebServer()
         {
             try
             {
-                Authorize(typeof(Manager));
-
-                var period = new TimeRange(startTime, endTime);
-                var shift = new Shift(period);
-
-                shift.Validate();
-                if (!shift.IsValid)
+                using (var server = new WebServer(o => o
+                    .WithUrlPrefix(url)
+                    .WithMode(HttpListenerMode.EmbedIO)))
                 {
-                    Console.WriteLine("Shift validation failed:");
-                    foreach (var error in shift.ValidationErrors)
-                        Console.WriteLine($" - {error}");
-                    return false;
+                    server
+                        .WithWebApi("/api", m => m.RegisterController(() => new ShiftApiController(shiftService)))
+                        .WithStaticFolder("/", "html", true);
+
+                    server.RunAsync().Wait();
                 }
-
-                _unitOfWork.Shifts.Add(shift);
-                _unitOfWork.SaveChanges();
-
-
-                var eventData = new ShiftEventData(shift, null);
-                _eventManager.Notify("NewShift", eventData);
-
-                return true;
-            }
-            catch (ArgumentException ex)
-            {
-                Console.WriteLine($"Error creating shift: {ex.Message}");
-                return false;
-            }
-        }
-
-        public bool AssignToShift(int shiftId)
-        {
-            try
-            {
-                Authorize(typeof(Worker));
-
-                var shift = _unitOfWork.Shifts.GetById(shiftId);
-                if (shift == null || shift.AssignedWorkerId != null)
-                {
-                    Console.WriteLine("Shift not found or already assigned.");
-                    return false;
-                }
-
-                bool hasConflict = _unitOfWork.Shifts.GetAll().Any(s =>
-                    s.AssignedWorkerId == signedInUser.Id &&
-                    s.Period.StartTime < shift.Period.EndTime &&
-                    s.Period.EndTime > shift.Period.StartTime
-                );
-
-                if (hasConflict)
-                {
-                    Console.WriteLine("Shift conflicts with existing schedule.");
-                    return false;
-                }
-
-                shift.AssignedWorkerId = signedInUser.Id;
-                shift.MarkUpdated();
-                _unitOfWork.Shifts.Update(shift);
-                _unitOfWork.SaveChanges();
-
-                var eventData = new ShiftEventData(shift, signedInUser);
-                _eventManager.Notify("ShiftAssigned", eventData);
-
-                return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Action failed: {ex.Message}");
-                return false;
+                Console.WriteLine($"[Web Server Error]: {ex.Message}");
             }
-        }
-
-        public bool Login(string login, string password)
-        {
-            var account = _unitOfWork.Accounts.GetByLogin(login);
-            if (account != null)
-            {
-                if (Security.SecurityHelper.VerifyPassword(password, account.PasswordHash, account.PasswordSalt))
-                {
-                    signedInUser = account;
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public void Logout()
-        {
-            signedInUser = new GuestAccount();
-        }
-
-        private void Authorize(Type requiredType)
-        {
-            if (signedInUser.GetType() != requiredType && !signedInUser.GetType().IsSubclassOf(requiredType))
-            {
-                throw new UnauthorizedAccessException("You do not have permission to perform this action.");
-            }
-        }
-
-        public bool IsManager()
-        {
-            return signedInUser is Manager;
-        }
-        public bool IsAppManager()
-        {
-            return signedInUser is AppManager;
-        }
-
-        public List<Shift> GetAvailableShifts()
-        {
-            return _unitOfWork.Shifts.GetAll().Where(s => s.AssignedWorkerId == null).ToList();
-        }
-
-        public List<(Shift shift, Account worker)> GetAssignedShiftsWithWorker()
-        {
-            Authorize(typeof(Manager));
-
-            var assignedShifts = _unitOfWork.Shifts.GetAll()
-                .Where(s => s.AssignedWorkerId != null)
-                .ToList();
-
-            var workers = _unitOfWork.Accounts.GetAll()
-                .ToDictionary(a => a.Id, a => a);
-
-            return assignedShifts.Select(s =>
-            {
-                Account? worker = workers.GetValueOrDefault(s.AssignedWorkerId!.Value);
-                if (worker == null)
-                    worker = new UnknownWorker();
-
-                return (s, worker);
-            }).ToList();
-        }
-
-        public void AddNotification(int userId, string message)
-        {
-            var notification = new Notification(userId, message);
-            notification.Validate();
-            if (notification.IsValid)
-            {
-                _unitOfWork.Notifications.Add(notification);
-                _unitOfWork.SaveChanges();
-            }
-        }
-
-        public List<Notification> GetAndClearUserNotifications(int userId)
-        {
-            var notifications = _unitOfWork.Notifications.GetByUserId(userId);
-            if (notifications.Any())
-            {
-                _unitOfWork.Notifications.DeleteByUserId(userId);
-                _unitOfWork.SaveChanges();
-            }
-            return notifications;
         }
     }
 }

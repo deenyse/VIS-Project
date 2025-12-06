@@ -11,6 +11,7 @@ namespace CV_3_project.Services
         private readonly AccountFactory _accountFactory;
         private readonly EventManager _eventManager;
 
+
         public ShiftService(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
@@ -19,6 +20,8 @@ namespace CV_3_project.Services
 
             _eventManager.Register(new WorkerNotifier(_unitOfWork));
             _eventManager.Register(new ManagerNotifier(_unitOfWork));
+            EnsureRootAdminExists();
+
         }
 
         public void EnsureRootAdminExists()
@@ -38,6 +41,18 @@ namespace CV_3_project.Services
             }
         }
 
+        private void Authorize(int userId, Type requiredType)
+        {
+            var user = GetAccountById(userId);
+            if (user == null)
+            {
+                throw new UnauthorizedAccessException("There is no user with provided id.");
+            }
+            if (user.GetType() != requiredType && !user.GetType().IsSubclassOf(requiredType))
+            {
+                throw new UnauthorizedAccessException("You do not have permission to perform this action.");
+            }
+        }
         public string? CreateAccount(AccountType type, AccountCreationArgs args)
         {
             try
@@ -53,12 +68,14 @@ namespace CV_3_project.Services
             catch (Exception ex) { return ex.Message; }
         }
 
-        public string? AddShift(DateTime startTime, DateTime endTime)
+        public string? AddShift(int userId, DateTime startTime, DateTime endTime)
         {
             try
             {
+                Authorize(userId, typeof(Manager));
                 var period = new TimeRange(startTime, endTime);
                 var shift = new Shift(period);
+
                 shift.Validate();
                 if (!shift.IsValid) return string.Join(", ", shift.ValidationErrors);
 
@@ -71,28 +88,28 @@ namespace CV_3_project.Services
             catch (Exception ex) { return ex.Message; }
         }
 
-        public string? AssignToShift(int shiftId, int workerId)
+        public string? AssignToShift(int userId, int shiftId)
         {
             try
             {
+                Authorize(userId, typeof(Worker));
                 var shift = _unitOfWork.Shifts.GetById(shiftId);
                 if (shift == null || shift.AssignedWorkerId != null) return "Shift unavailable.";
 
                 bool hasConflict = _unitOfWork.Shifts.GetAll().Any(s =>
-                    s.AssignedWorkerId == workerId &&
+                    s.AssignedWorkerId == userId &&
                     s.Period.StartTime < shift.Period.EndTime &&
                     s.Period.EndTime > shift.Period.StartTime
                 );
 
                 if (hasConflict) return "Schedule conflict.";
 
-                shift.AssignedWorkerId = workerId;
+                shift.AssignedWorkerId = userId;
                 shift.MarkUpdated();
                 _unitOfWork.Shifts.Update(shift);
                 _unitOfWork.SaveChanges();
 
-                var worker = _unitOfWork.Accounts.GetById(workerId);
-                _eventManager.Notify("ShiftAssigned", new ShiftEventData(shift, worker));
+                _eventManager.Notify("ShiftAssigned", new ShiftEventData(shift, GetAccountById(userId)));
                 return null;
             }
             catch (Exception ex) { return ex.Message; }
@@ -135,53 +152,69 @@ namespace CV_3_project.Services
 
         public void AddNotification(int userId, string message)
         {
-            var notification = new Notification(userId, message);
-            notification.Validate();
-            if (notification.IsValid)
+            try
             {
-                _unitOfWork.Notifications.Add(notification);
-                _unitOfWork.SaveChanges();
+                Authorize(userId, typeof(Manager));
+                var notification = new Notification(userId, message);
+                notification.Validate();
+                if (notification.IsValid)
+                {
+                    _unitOfWork.Notifications.Add(notification);
+                    _unitOfWork.SaveChanges();
+                }
             }
+            catch (Exception ex) { Console.WriteLine(ex.Message); }
         }
-
         public List<Shift> GetAssignedShifts()
         {
             return _unitOfWork.Shifts.GetAll().Where(s => s.AssignedWorkerId != null).ToList();
         }
 
-        public Account? GetWorker(int id)
+        public List<Shift> GetAvailableShifts() =>
+           _unitOfWork.Shifts.GetAll().Where(s => s.AssignedWorkerId == null).ToList();
+
+
+        public string? CreateManager(int userId, string login, string password, string name, string surname, string email, string phone)
+        {
+            try
+            {
+                Authorize(userId, typeof(AppManager));
+
+                var args = new AccountCreationArgs
+                {
+                    Login = login,
+                    Password = password,
+                    Name = name,
+                    Surname = surname,
+                    Contacts = new ContactInfo(email, phone)
+                };
+                return CreateAccount(AccountType.Manager, args);
+            }
+            catch (Exception ex) { return ex.Message; }
+        }
+
+        public string? CreateWorker(int userId, string login, string password, string name, string surname, string email, string phone, string position)
+        {
+            try
+            {
+                Authorize(userId, typeof(AppManager));
+
+                var args = new AccountCreationArgs
+                {
+                    Login = login,
+                    Password = password,
+                    Name = name,
+                    Surname = surname,
+                    Contacts = new ContactInfo(email, phone),
+                    Position = position
+                };
+                return CreateAccount(AccountType.Worker, args);
+            }
+            catch (Exception ex) { return ex.Message; }
+        }
+        private Account? GetAccountById(int id)
         {
             return _unitOfWork.Accounts.GetById(id);
         }
-
-        public string? CreateManager(string login, string password, string name, string surname, string email, string phone)
-        {
-            var args = new AccountCreationArgs
-            {
-                Login = login,
-                Password = password,
-                Name = name,
-                Surname = surname,
-                Contacts = new ContactInfo(email, phone)
-            };
-            return CreateAccount(AccountType.Manager, args);
-        }
-
-        public string? CreateWorker(string login, string password, string name, string surname, string email, string phone, string position)
-        {
-            var args = new AccountCreationArgs
-            {
-                Login = login,
-                Password = password,
-                Name = name,
-                Surname = surname,
-                Contacts = new ContactInfo(email, phone),
-                Position = position
-            };
-            return CreateAccount(AccountType.Worker, args);
-        }
-
-        public List<Shift> GetAvailableShifts() =>
-            _unitOfWork.Shifts.GetAll().Where(s => s.AssignedWorkerId == null).ToList();
     }
 }

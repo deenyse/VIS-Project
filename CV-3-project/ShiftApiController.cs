@@ -15,22 +15,26 @@ namespace CV_3_project
 
     public class AssignRequest
     {
-        public int ShiftId { get; set; }
         public int WorkerId { get; set; }
+        public int ShiftId { get; set; }
+
     }
 
     public class CreateRequest
     {
+        public int WorkerId { get; set; }
         public DateTime Start { get; set; }
         public DateTime End { get; set; }
     }
     public class NotificationRequest
     {
+        public int WorkerId { get; set; }
         public int UserId { get; set; }
         public string Message { get; set; }
     }
     public class CreateAccountRequest
     {
+        public int WorkerId { get; set; }
         public string Type { get; set; }
         public string Login { get; set; }
         public string Password { get; set; }
@@ -91,19 +95,9 @@ namespace CV_3_project
         public List<Shift> GetShifts() => _service.GetAvailableShifts();
 
         [Route(HttpVerbs.Get, "/shifts/assigned")]
-        public List<object> GetAssignedShifts()
+        public List<Shift> GetAssignedShifts()
         {
-            var shifts = _service.GetAssignedShifts();
-            var result = new List<object>();
-            foreach (var s in shifts)
-            {
-                if (s.AssignedWorkerId.HasValue)
-                {
-                    var worker = _service.GetWorker(s.AssignedWorkerId.Value);
-                    result.Add(new { Shift = s, Worker = worker });
-                }
-            }
-            return result;
+            return _service.GetAvailableShifts();
         }
 
         [Route(HttpVerbs.Get, "/shifts/worker/{workerId}")]
@@ -136,7 +130,7 @@ namespace CV_3_project
                     return false;
                 }
 
-                string? error = _service.AddShift(request.Start, request.End);
+                string? error = _service.AddShift(request.WorkerId, request.Start, request.End);
                 if (error != null)
                 {
                     //Console.WriteLine($"[ERROR] Create failed: {error}");
@@ -254,11 +248,11 @@ namespace CV_3_project
 
                 if (data.Type == "manager")
                 {
-                    return _service.CreateManager(login, pass, name, sur, mail, ph);
+                    return _service.CreateManager(data.WorkerId, login, pass, name, sur, mail, ph);
                 }
                 else if (data.Type == "worker")
                 {
-                    return _service.CreateWorker(login, pass, name, sur, mail, ph, pos);
+                    return _service.CreateWorker(data.WorkerId, login, pass, name, sur, mail, ph, pos);
                 }
 
                 return "Invalid account type";
