@@ -4,11 +4,11 @@
     "Projects": [
       {
         "Path": "CV-3-project\\CV-3-project.csproj",
-        "Action": "Start"
+        "Action": "StartWithoutDebugging"
       },
       {
         "Path": "ClientTerminal\\ClientTerminal.csproj",
-        "Action": "Start"
+        "Action": "StartWithoutDebugging"
       }
     ]
   }

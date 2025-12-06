@@ -1,0 +1,5 @@
+C:\Users\denve\Desktop\5sem\VIS\CV-3-project\ModelsLib\obj\Debug\net9.0\ModelsLib.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\denve\Desktop\5sem\VIS\CV-3-project\ModelsLib\obj\Debug\net9.0\ModelsLib.AssemblyInfoInputs.cache
+C:\Users\denve\Desktop\5sem\VIS\CV-3-project\ModelsLib\obj\Debug\net9.0\ModelsLib.AssemblyInfo.cs
+C:\Users\denve\Desktop\5sem\VIS\CV-3-project\ModelsLib\obj\Debug\net9.0\ModelsLib.csproj.CoreCompileInputs.cache
+C:\Users\denve\Desktop\5sem\VIS\CV-3-project\ModelsLib\obj\Debug\net9.0\ModelsLib.sourcelink.json
