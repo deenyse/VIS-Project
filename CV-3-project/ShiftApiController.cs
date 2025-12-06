@@ -110,7 +110,7 @@ namespace CV_3_project
                            .ToList();
         }
 
-        [Route(HttpVerbs.Post, "/shifts")]
+        [Route(HttpVerbs.Post, "/shifts/create")]
         public async Task<bool> AddShift()
         {
             string body;
@@ -165,21 +165,21 @@ namespace CV_3_project
 
                 if (request == null || request.ShiftId == 0 || request.WorkerId == 0)
                 {
-                    //Console.WriteLine("[ERROR] Assign JSON invalid");
+                    Console.WriteLine("[ERROR] Assign JSON invalid");
                     return false;
                 }
 
-                string? error = _service.AssignToShift(request.ShiftId, request.WorkerId);
+                string? error = _service.AssignToShift(request.WorkerId, request.ShiftId);
                 if (error != null)
                 {
-                    //Console.WriteLine($"[ERROR] Assign failed: {error}");
+                    Console.WriteLine($"[ERROR] Assign failed: {error}");
                     return false;
                 }
                 return true;
             }
             catch (Exception ex)
             {
-                //Console.WriteLine($"[ERROR] Assign Exception: {ex.Message}");
+                Console.WriteLine($"[ERROR] Assign Exception: {ex.Message}");
                 return false;
             }
         }
@@ -190,7 +190,7 @@ namespace CV_3_project
             return _service.GetAndClearNotifications(userId);
         }
 
-        [Route(HttpVerbs.Post, "/notifications")]
+        [Route(HttpVerbs.Post, "/notifications/send")]
         public async Task<bool> SendNotification()
         {
             string body;

@@ -466,7 +466,7 @@
                             end: this.newShift.end,
                         };
                         try {
-                            const res = await fetch("/api/shifts", {
+                            const res = await fetch("/api/shifts/create", {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify(payload),
@@ -524,7 +524,7 @@
                         };
 
                         try {
-                            await fetch("/api/notifications", {
+                            await fetch("/api/notifications/send", {
                                 method: "POST",
                                 headers: {
                                     "Content-Type": "application/json",
